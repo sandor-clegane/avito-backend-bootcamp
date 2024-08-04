@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgresdb
+    restart: on-failure
+  postgresdb:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=house_service
+    ports:
+      - '1234:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  postgresdb_test:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=house_service_test
+    ports:
+      - '4568:5432'
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+  postgres_data_test:
+
