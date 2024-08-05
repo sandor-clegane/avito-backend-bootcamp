@@ -18,6 +18,6 @@ func New(log *slog.Logger) *Service {
 
 func (s *Service) CreateHouse(ctx context.Context, address, developer string, year int64) (*model.House, error) {
 	// TODO
-	// insert to repo
+	// insert house to repo
 	return nil, nil
 }

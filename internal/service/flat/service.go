@@ -19,18 +19,15 @@ func New(log *slog.Logger) *Service {
 func (s *Service) CreateFlat(ctx context.Context, houseID, price, fooms int64) (*model.Flat, error) {
 	// TODO
 	// insert to repo
+	// check FK
 	return nil, nil
 }
 
 func (s *Service) UpdateFlat(ctx context.Context, ID int64, status model.FlatStatus) (*model.Flat, error) {
 	// TODO
 	// update from repo
-	// craete flat approved event
+	// if status=approved->create flat approved event
 	return nil, nil
-}
-
-func (s *Service) GetFlatApprovedEvents(ctx context.Context) error {
-	return nil
 }
 
 func (s *Service) GetFlatListByHouseID(ctx context.Context, houseID int64, userRole model.UserType) ([]*model.Flat, error) {

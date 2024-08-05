@@ -17,16 +17,12 @@ func New(log *slog.Logger) *Service {
 }
 
 func (s *Service) CreateSubscription(ctx context.Context, houseID int64, email string) error {
-	// insert to repo
+	// insert subscription to repo
+	// think how to check email??
 	return nil
 }
 
 func (s *Service) GetSubsciberListByHouseID(ctx context.Context, houseID int64) ([]*model.Subscription, error) {
 	// get list from repo
 	return nil, nil
-}
-
-func (s *Service) NotifySubscriber(ctx context.Context, subEmail, message string) error {
-	// use mock client
-	return nil
 }

@@ -66,7 +66,7 @@ func HandleUpdateFlat(validate *validator.Validate, flatService FlatService) htt
 			HouseID: flat.HouseID,
 			Price:   flat.Price,
 			Status:  string(flat.Status),
-			Rooms:   flat.NumberOfRooms,
+			Rooms:   flat.Rooms,
 		})
 	}
 }
