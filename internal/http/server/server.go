@@ -4,6 +4,11 @@ import (
 	"avito-backend-bootcamp/internal/config"
 	h "avito-backend-bootcamp/internal/http/handlers"
 	mwr "avito-backend-bootcamp/internal/http/middleware"
+	"avito-backend-bootcamp/internal/infra/jwt"
+	"avito-backend-bootcamp/internal/service/auth"
+	"avito-backend-bootcamp/internal/service/flat"
+	"avito-backend-bootcamp/internal/service/house"
+	sub "avito-backend-bootcamp/internal/service/subscription"
 
 	"context"
 	"log/slog"
@@ -18,7 +23,16 @@ type Server struct {
 	server *http.Server
 }
 
-func New(cfg *config.Config, log *slog.Logger, validate *validator.Validate) (*Server, error) {
+func New(
+	cfg *config.Config,
+	log *slog.Logger,
+	validate *validator.Validate,
+	authService *auth.Service,
+	flatService *flat.Service,
+	houseService *house.Service,
+	subService *sub.Service,
+	jwtManager *jwt.Manager,
+) (*Server, error) {
 	// init router
 	router := chi.NewRouter()
 
@@ -29,24 +43,23 @@ func New(cfg *config.Config, log *slog.Logger, validate *validator.Validate) (*S
 	router.Use(middleware.URLFormat)
 
 	// Доступно всем, авторизация не нужна
-	router.Get("/dummyLogin", h.HandleDummyLogin())
-	router.Post("/login", h.HandleLogin(validate))
-	router.Post("/signup", h.HandleSignup(validate))
+	router.Get("/dummyLogin", h.HandleDummyLogin(authService))
+	router.Post("/login", h.HandleLogin(validate, authService))
+	router.Post("/signup", h.HandleSignup(validate, authService))
 
 	// Доступно любому авторизированному
 	router.Group(func(r chi.Router) {
-		r.Use(mwr.AuthModerator)
-		r.Use(mwr.AuthUser)
-		r.Get("/house/{id}", h.HandleGetHouse())
-		r.Post("/house/{id}/subscribe", h.HandleSubscribeHouse(validate))
-		r.Post("/flat/create", h.HandleCreateFlat(validate))
+		r.Use(mwr.NewAuthModeratorOrClient(jwtManager))
+		r.Get("/house/{id}", h.HandleGetHouse(flatService))
+		r.Post("/house/{id}/subscribe", h.HandleSubscribeHouse(validate, subService))
+		r.Post("/flat/create", h.HandleCreateFlat(validate, flatService))
 	})
 
 	// Доступно только для модераторов
 	router.Group(func(r chi.Router) {
-		r.Use(mwr.AuthModerator)
-		r.Post("/house/create", h.HandleCreateHouse(validate))
-		r.Post("/flat/update", h.HandleUpdateFlat(validate))
+		r.Use(mwr.NewAuthModerator(jwtManager))
+		r.Post("/house/create", h.HandleCreateHouse(validate, houseService))
+		r.Post("/flat/update", h.HandleUpdateFlat(validate, flatService))
 	})
 
 	return &Server{

@@ -1,8 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
+
+	mwr "avito-backend-bootcamp/internal/http/middleware"
+
+	"github.com/go-chi/render"
 )
 
 type errorResponse struct {
@@ -11,9 +14,12 @@ type errorResponse struct {
 	Code      int    `json:"code"`
 }
 
-func writeError(w http.ResponseWriter, err errorResponse) {
-	w.WriteHeader(err.Code)
-	errorResponse, _ := json.Marshal(err)
-	w.Write(errorResponse)
+func writeInternalError(r *http.Request, w http.ResponseWriter, err error) {
+	render.Status(r, http.StatusInternalServerError)
 	w.Header().Set("Retry-After", "30")
+	render.JSON(w, r, errorResponse{
+		Message:   err.Error(),
+		RequestID: r.Context().Value(mwr.RequestIDKey).(string),
+		Code:      http.StatusInternalServerError,
+	})
 }

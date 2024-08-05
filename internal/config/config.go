@@ -13,6 +13,13 @@ type Config struct {
 
 	HTTPServer `yaml:"http_server"`
 	DB         `yaml:"db"`
+	JWT        `yaml:"jwt"`
+}
+
+type JWT struct {
+	TokenTTL time.Duration `yaml:"token_ttl" env-default:"86400s"`
+	// в реальном проекте секрет бы лежал в хранилище секретов(например Vault)
+	SecretKey string `yaml:"secret_key"`
 }
 
 type HTTPServer struct {

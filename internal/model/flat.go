@@ -2,10 +2,9 @@ package model
 
 // Квартира
 type Flat struct {
-	ID            int        `json:"id"`
-	HouseID       int        `json:"house_id"`
-	FlatNumber    string     `json:"apartment_number"`
-	Price         int        `json:"price"`
-	NumberOfRooms int        `json:"number_of_rooms"`
-	Status        FlatStatus `json:"flat_status"`
+	ID            int64      `json:"id"`
+	HouseID       int64      `json:"house_id"`
+	Price         int64      `json:"price"`
+	NumberOfRooms int64      `json:"rooms"`
+	Status        FlatStatus `json:"status"`
 }

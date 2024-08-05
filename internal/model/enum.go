@@ -64,6 +64,14 @@ const (
 	Client    UserType = "client"
 )
 
+func MustParseUserType(str string) UserType {
+	result, err := ParseUserType(str)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
 func ParseUserType(str string) (UserType, error) {
 	var ut UserType
 

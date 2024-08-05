@@ -3,8 +3,14 @@ package main
 import (
 	"avito-backend-bootcamp/internal/config"
 	"avito-backend-bootcamp/internal/http/server"
+	"avito-backend-bootcamp/internal/infra/jwt"
+	"avito-backend-bootcamp/internal/service/auth"
+	"avito-backend-bootcamp/internal/service/flat"
+	"avito-backend-bootcamp/internal/service/house"
+	sub "avito-backend-bootcamp/internal/service/subscription"
 	"avito-backend-bootcamp/pkg/utils/flags"
 	"avito-backend-bootcamp/pkg/utils/sl"
+
 	"context"
 	"errors"
 	"net/http"
@@ -32,7 +38,21 @@ func main() {
 
 	validate := validator.New()
 
-	srv, err := server.New(cfg, log, validate)
+	flatService := flat.New(log)
+	houseService := house.New(log)
+	subService := sub.New(log)
+	authService := auth.New(log)
+	jwtManager := jwt.New(cfg.JWT.SecretKey, cfg.JWT.TokenTTL)
+
+	srv, err := server.New(
+		cfg, log,
+		validate,
+		authService,
+		flatService,
+		houseService,
+		subService,
+		jwtManager,
+	)
 	if err != nil {
 		log.Error("failed to create server", sl.Err(err))
 		os.Exit(1)

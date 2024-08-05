@@ -1,13 +1,37 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
+
+	"avito-backend-bootcamp/internal/model"
+	pkgCtx "avito-backend-bootcamp/pkg/utils/ctx"
+
+	"github.com/go-chi/render"
 )
 
-func HandleDummyLogin() http.HandlerFunc {
+type dummyLoginResponse struct {
+	Token string `json:"token"`
+}
+
+func HandleDummyLogin(authService AuthService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Handle dummy login")
-		w.WriteHeader(http.StatusOK)
+		userTypeRaw := r.URL.Query().Get(pkgCtx.KeyUserType)
+
+		userType, err := model.ParseUserType(userTypeRaw)
+		if err != nil {
+			writeInternalError(r, w, err)
+			return
+		}
+
+		token, err := authService.DummyLogin(r.Context(), userType)
+		if err != nil {
+			writeInternalError(r, w, err)
+			return
+		}
+
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, dummyLoginResponse{
+			Token: token,
+		})
 	}
 }

@@ -16,7 +16,7 @@ func New(log *slog.Logger) *Service {
 	}
 }
 
-func (s *Service) CreateFlat(ctx context.Context, HouseID, Price, Rooms int64) (*model.Flat, error) {
+func (s *Service) CreateFlat(ctx context.Context, houseID, price, fooms int64) (*model.Flat, error) {
 	// TODO
 	// insert to repo
 	return nil, nil
@@ -31,4 +31,10 @@ func (s *Service) UpdateFlat(ctx context.Context, ID int64, status model.FlatSta
 
 func (s *Service) GetFlatApprovedEvents(ctx context.Context) error {
 	return nil
+}
+
+func (s *Service) GetFlatListByHouseID(ctx context.Context, houseID int64, userRole model.UserType) ([]*model.Flat, error) {
+	// get list using cache
+	// apply visibility rules
+	return nil, nil
 }

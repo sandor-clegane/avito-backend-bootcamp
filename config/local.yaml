@@ -10,3 +10,6 @@ db:
     username: "postgres"
     name: "house_service"
     password: "postgres"
+jwt:
+    token_ttl: 86400s
+    secret_key: "test_secret_key"

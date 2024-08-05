@@ -16,12 +16,12 @@ func New(log *slog.Logger) *Service {
 	}
 }
 
-func (s *Service) CreateSubscription(ctx context.Context, HouseID, Price, Rooms int64) (*model.Flat, error) {
+func (s *Service) CreateSubscription(ctx context.Context, houseID int64, email string) error {
 	// insert to repo
-	return nil, nil
+	return nil
 }
 
-func (s *Service) GetSubsciberListByHouseID(ctx context.Context, HouseID int64) ([]*model.Subscription, error) {
+func (s *Service) GetSubsciberListByHouseID(ctx context.Context, houseID int64) ([]*model.Subscription, error) {
 	// get list from repo
 	return nil, nil
 }
