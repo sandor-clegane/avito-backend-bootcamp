@@ -95,7 +95,8 @@ func (s *Service) processEvent(ctx context.Context) error {
 		return fmt.Errorf("failed to get new event: %w", err)
 	}
 
-	if event.ID == 0 {
+	// no new events
+	if event == nil {
 		return nil
 	}
 

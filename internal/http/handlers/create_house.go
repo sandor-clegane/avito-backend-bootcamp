@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	dbUtil "avito-backend-bootcamp/pkg/utils/db"
 	resp "avito-backend-bootcamp/pkg/utils/response"
+
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -59,7 +61,7 @@ func HandleCreateHouse(validate *validator.Validate, houseService HouseService) 
 			ID:        house.ID,
 			Address:   house.Address,
 			Year:      house.YearOfConstruction,
-			Developer: house.Developer,
+			Developer: dbUtil.FromNullString(house.Developer),
 			CreatedAt: house.CreatedAt,
 			UpdatedAt: house.UpdatedAt,
 		})

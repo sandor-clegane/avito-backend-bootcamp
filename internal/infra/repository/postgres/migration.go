@@ -41,4 +41,14 @@ CREATE TABLE IF NOT EXISTS flat (
   status moderation_status NOT NULL DEFAULT 'created',
   CONSTRAINT fk_flat_house_id FOREIGN KEY (house_id) REFERENCES house (id) ON DELETE CASCADE
 );
+
+CREATE TYPE event_type AS ENUM ('flat_approved');
+
+CREATE TABLE event (
+  id BIGSERIAL PRIMARY KEY,
+  type event_type NOT NULL,
+  payload TEXT NOT NULL,
+  created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMP NULL
+);
 `
