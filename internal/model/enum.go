@@ -105,3 +105,43 @@ func (ut *UserType) Scan(value interface{}) error {
 func (ut UserType) Value() (driver.Value, error) {
 	return string(ut), nil
 }
+
+//======|| EventType ||========================================
+
+type EventType string
+
+const (
+	FlatApproved EventType = "flat_approved"
+)
+
+func ParseEventType(str string) (EventType, error) {
+	var et EventType
+
+	switch str {
+	case string(FlatApproved):
+		et = FlatApproved
+	default:
+		return "", errors.New(fmt.Sprintf("unknown enum value %s", str))
+	}
+
+	return et, nil
+}
+
+func (ut *EventType) Scan(value interface{}) error {
+	str, ok := value.(string)
+	if !ok {
+		return errors.New("faile type assertion")
+	}
+
+	status, err := ParseEventType(str)
+	if err != nil {
+		return err
+	}
+
+	*ut = status
+	return nil
+}
+
+func (ut EventType) Value() (driver.Value, error) {
+	return string(ut), nil
+}

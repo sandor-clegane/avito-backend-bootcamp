@@ -1,28 +1,41 @@
 package sub
 
 import (
-	"avito-backend-bootcamp/internal/model"
+	"avito-backend-bootcamp/pkg/utils/sl"
 	"context"
 	"log/slog"
 )
 
-type Service struct {
-	log *slog.Logger
+type SubscriberRepository interface {
+	SaveSubscritpion(ctx context.Context, houseID int64, email string) error
 }
 
-func New(log *slog.Logger) *Service {
+type Service struct {
+	log        *slog.Logger
+	repository SubscriberRepository
+}
+
+func New(log *slog.Logger, repository SubscriberRepository) *Service {
 	return &Service{
-		log: log,
+		log:        log,
+		repository: repository,
 	}
 }
 
 func (s *Service) CreateSubscription(ctx context.Context, houseID int64, email string) error {
-	// insert subscription to repo
-	// think how to check email??
-	return nil
-}
+	const op = "subscription.CreateSubscription"
 
-func (s *Service) GetSubsciberListByHouseID(ctx context.Context, houseID int64) ([]*model.Subscription, error) {
-	// get list from repo
-	return nil, nil
+	log := s.log.With(
+		slog.String("op", op),
+		slog.String("email", email),
+		slog.Int64("house_id", houseID),
+	)
+
+	err := s.repository.SaveSubscritpion(ctx, houseID, email)
+	if err != nil {
+		log.Error("failed to save subscription", sl.Err(err))
+		return err
+	}
+
+	return nil
 }

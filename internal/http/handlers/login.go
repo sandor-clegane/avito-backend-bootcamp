@@ -51,9 +51,21 @@ func HandleLogin(validate *validator.Validate, authService AuthService) http.Han
 				render.JSON(w, r, resp.NewError(err))
 				return
 			}
+
+			if errors.Is(err, auth.ErrInvalidCredentials) {
+				render.Status(r, http.StatusUnauthorized)
+				render.JSON(w, r, resp.NewError(err))
+				return
+			}
+
 			writeInternalError(r, w, err)
 			return
 		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:  "Authorization",
+			Value: token,
+		})
 
 		// Respond with the authentication token
 		render.Status(r, http.StatusOK)

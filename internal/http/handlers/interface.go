@@ -9,7 +9,6 @@ import (
 
 type AuthService interface {
 	DummyLogin(ctx context.Context, role model.UserType) (string, error)
-	FindUserByID(ctx context.Context, ID uuid.UUID) (*model.User, error)
 	Login(ctx context.Context, ID uuid.UUID, password string) (string, error)
 	Register(ctx context.Context, email, password string, role model.UserType) (uuid.UUID, error)
 }
