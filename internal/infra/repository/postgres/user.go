@@ -17,11 +17,12 @@ func (r *Repository) SaveUser(ctx context.Context, email, password string, role 
 
 	// Prepare the query to insert the user
 	query :=
-		`INSERT INTO user (id, email, password, role)
+		`INSERT INTO users (id, email, password, role)
 	 VALUES (?, ?, ?, ?)`
 
 	// Insert the user using the prepared query
-	_, err := r.db.ExecContext(ctx, query, userID, email, password, role)
+	_, err := r.getter.DefaultTrOrDB(ctx, r.db).
+		ExecContext(ctx, query, userID, email, password, role)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return uuid.UUID{}, repo.ErrConstraintViolation
@@ -37,12 +38,13 @@ func (r *Repository) GetUser(ctx context.Context, ID uuid.UUID) (*model.User, er
 	// Prepare the query to fetch the user by ID
 	query :=
 		`SELECT *
-	 FROM user
+	 FROM users
 	 WHERE id = ?`
 
 	// Fetch the user using the prepared query
 	var user model.User
-	err := r.db.GetContext(ctx, &user, query, ID)
+	err := r.getter.DefaultTrOrDB(ctx, r.db).
+		GetContext(ctx, &user, query, ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, repo.ErrNotFound

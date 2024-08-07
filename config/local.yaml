@@ -6,7 +6,7 @@ http_server:
     shutdown_timeout: 10s
 db:
     host: "postgresdb"
-    port: 1234
+    port: 5432
     username: "postgres"
     name: "house_service"
     password: "postgres"

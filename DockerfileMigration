@@ -1,0 +1,14 @@
+# Specifies a parent image
+FROM golang:1.21.6-bullseye
+ 
+# Creates an app directory to hold your app’s source code
+WORKDIR /app
+ 
+# Copies everything from your root directory into /app
+COPY . .
+ 
+# Installs Go dependencies
+RUN go mod download
+ 
+# Specifies the executable command that runs when the container starts
+CMD ["go", "run", "cmd/migrator/main.go", "--storage-path=postgres://postgres:postgres@postgresdb:5432/house_service?sslmode=disable", "-migrations-path=./migrations", "-migration-direction=up"] 

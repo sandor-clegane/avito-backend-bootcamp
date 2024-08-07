@@ -12,11 +12,12 @@ import (
 func (r *Repository) SaveHouse(ctx context.Context, address, developer string, year int64) (*model.House, error) {
 	// Prepare the query to insert the house
 	query :=
-		`INSERT INTO house (address, developer, year)
+		`INSERT INTO houses (address, developer, year)
 	 VALUES (?, ?, ?)`
 
 	// Insert the house using the prepared query
-	result, err := r.db.ExecContext(ctx, query, address, dbUtil.NewNullString(developer), year)
+	result, err := r.getter.DefaultTrOrDB(ctx, r.db).
+		ExecContext(ctx, query, address, dbUtil.NewNullString(developer), year)
 	if err != nil {
 		return nil, err
 	}
@@ -43,12 +44,13 @@ func (r *Repository) GetHouse(ctx context.Context, id int64) (*model.House, erro
 	// Prepare the query to fetch the house by ID
 	query :=
 		`SELECT *
-	 FROM house
+	 FROM houses
 	 WHERE id = ?`
 
 	// Fetch the house using the prepared query
 	var house model.House
-	err := r.db.GetContext(ctx, &house, query, id)
+	err := r.getter.DefaultTrOrDB(ctx, r.db).
+		GetContext(ctx, &house, query, id)
 	if err != nil {
 		return nil, err
 	}

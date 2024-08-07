@@ -3,6 +3,7 @@ package emailsender
 import (
 	"avito-backend-bootcamp/internal/model"
 	r "avito-backend-bootcamp/pkg/utils/retry"
+	"avito-backend-bootcamp/pkg/utils/sl"
 	"fmt"
 
 	"context"
@@ -81,7 +82,7 @@ func (s *Service) StartProcessEvents(ctx context.Context, handlePeriod time.Dura
 				// Process event
 				err := s.processEvent(ctx)
 				if err != nil {
-					log.Error("failed to process event")
+					log.Error("failed to process event", sl.Err(err))
 				}
 			}
 		}
@@ -97,6 +98,7 @@ func (s *Service) processEvent(ctx context.Context) error {
 
 	// no new events
 	if event == nil {
+		s.log.Info("no events to send")
 		return nil
 	}
 

@@ -2,8 +2,10 @@ package handlers
 
 import (
 	resp "avito-backend-bootcamp/pkg/utils/response"
+	"avito-backend-bootcamp/pkg/utils/sl"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -24,12 +26,19 @@ type createFlatResponse struct {
 	Status  string `json:"status"`
 }
 
-func HandleCreateFlat(validate *validator.Validate, flatService FlatService) http.HandlerFunc {
+func HandleCreateFlat(log *slog.Logger, validate *validator.Validate, flatService FlatService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Setup logger
+		const op = "handlers.HandleCreateFlat"
+		log := log.With(
+			slog.String("op", op),
+		)
+
 		// Decode the request body into a CreateFlatRequest struct
 		var req createFlatRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
+			log.Error("invalid json", sl.Err(err))
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, resp.NewError(err))
 			return
@@ -38,6 +47,7 @@ func HandleCreateFlat(validate *validator.Validate, flatService FlatService) htt
 		// Validate the request data
 		err = validate.Struct(req)
 		if err != nil {
+			log.Error("invalid inpit", sl.Err(err))
 			errors := err.(validator.ValidationErrors)
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, resp.NewError(fmt.Errorf("Validation error: %s", errors)))
@@ -47,11 +57,13 @@ func HandleCreateFlat(validate *validator.Validate, flatService FlatService) htt
 		// Create the flat
 		flat, err := flatService.CreateFlat(r.Context(), req.HouseID, req.Price, req.Rooms)
 		if err != nil {
+			log.Error("failed to create flat", sl.Err(err))
 			writeInternalError(r, w, err)
 			return
 		}
 
 		// Return the created flat details
+		log.Info("flat created")
 		render.Status(r, http.StatusOK)
 		render.JSON(w, r, createFlatResponse{
 			ID:      flat.ID,

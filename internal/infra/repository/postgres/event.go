@@ -11,8 +11,8 @@ import (
 // PublishEvent publishes a new event.
 func (r *Repository) PublishEvent(ctx context.Context, eventType model.EventType, payload string) error {
 	// Insert the event into the database
-	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO event (event_type, payload)
+	_, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx,
+		`INSERT INTO events (event_type, payload)
 		VALUES (?, ?)`,
 		eventType, payload)
 	if err != nil {
@@ -29,9 +29,9 @@ func (r *Repository) PublishEvent(ctx context.Context, eventType model.EventType
 func (r *Repository) GetNewEvent(ctx context.Context) (*model.Event, error) {
 	// Select the oldest unprocessed event
 	var event model.Event
-	err := r.db.GetContext(ctx, &event,
+	err := r.getter.DefaultTrOrDB(ctx, r.db).GetContext(ctx, &event,
 		`SELECT *
-		FROM event
+		FROM events
 		WHERE processed_at IS NULL
 		ORDER BY created_at ASC
 		LIMIT 1`,
@@ -49,8 +49,8 @@ func (r *Repository) GetNewEvent(ctx context.Context) (*model.Event, error) {
 // SetDone marks an event as processed.
 func (r *Repository) SetDone(ctx context.Context, eventID int64) error {
 	// Update the event to mark it as processed
-	_, err := r.db.ExecContext(ctx,
-		`UPDATE event
+	_, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx,
+		`UPDATE events
 		SET processed_at = NOW()
 		WHERE id = ?`,
 		eventID)

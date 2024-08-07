@@ -4,8 +4,11 @@ import (
 	"avito-backend-bootcamp/internal/model"
 	"avito-backend-bootcamp/pkg/utils/sl"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 )
 
 type FlatRepository interface {
@@ -19,21 +22,33 @@ type EventRepository interface {
 	PublishEvent(ctx context.Context, eventType model.EventType, payload string) error
 }
 
+type Cache[K comparable, V any] interface {
+	Set(key K, value V)
+	Get(key K) (V, bool)
+	Remove(key K)
+}
+
 type Service struct {
 	log             *slog.Logger
 	flatRepository  FlatRepository
 	eventRepository EventRepository
+	cache           Cache[int64, string]
+	trManager       *manager.Manager
 }
 
 func New(
 	log *slog.Logger,
 	flatRepository FlatRepository,
 	eventRepository EventRepository,
+	cache Cache[int64, string],
+	trManager *manager.Manager,
 ) *Service {
 	return &Service{
 		log:             log,
 		flatRepository:  flatRepository,
 		eventRepository: eventRepository,
+		cache:           cache,
+		trManager:       trManager,
 	}
 }
 
@@ -52,6 +67,10 @@ func (s *Service) CreateFlat(ctx context.Context, houseID, price, rooms int64) (
 		log.Error("failed to save flat", sl.Err(err))
 		return nil, err
 	}
+
+	// it is necessary to invalidate the cache
+	// since new flat was created
+	s.cache.Remove(flat.HouseID)
 
 	return flat, nil
 }
@@ -85,34 +104,36 @@ func (s *Service) UpdateFlat(ctx context.Context, ID int64, status model.FlatSta
 		return nil, err
 	}
 
-	// TODO:
-	// invalidate cache for given houseID
-	// TODO:
-	// need transaction manager ---------
-	updatedFlat, err := s.flatRepository.UpdateFlat(ctx, flat)
-	if err != nil {
-		log.Error("failed to update flat in db", sl.Err(err))
-		return nil, err
-	}
-
-	if flat.Status == model.StatusApproved {
-		eventPayload := fmt.Sprintf(
-			`{"house_id": %d}`,
-			flat.HouseID,
-		)
-
-		err = s.eventRepository.PublishEvent(ctx, model.FlatApproved, eventPayload)
+	s.trManager.Do(ctx, func(ctx context.Context) error {
+		flat, err = s.flatRepository.UpdateFlat(ctx, flat)
 		if err != nil {
-			log.Error("fauled to publish event", sl.Err(err))
-			return nil, err
+			log.Error("failed to update flat in db", sl.Err(err))
+			return err
 		}
-	}
-	// --------
 
-	return updatedFlat, nil
+		// it is necessary to invalidate the cache
+		// since flat was updated
+		s.cache.Remove(flat.HouseID)
+
+		if flat.Status == model.StatusApproved {
+			eventPayload := fmt.Sprintf(
+				`{"house_id": %d}`,
+				flat.HouseID,
+			)
+
+			err = s.eventRepository.PublishEvent(ctx, model.FlatApproved, eventPayload)
+			if err != nil {
+				log.Error("fauled to publish event", sl.Err(err))
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return flat, nil
 }
 
-// TODO: add caching
 // GetFlatListByHouseID retrieves a list of flats for a given house ID,
 // applying visibility rules based on the user role.
 func (s *Service) GetFlatListByHouseID(ctx context.Context, houseID int64, userRole model.UserType) ([]*model.Flat, error) {
@@ -124,10 +145,32 @@ func (s *Service) GetFlatListByHouseID(ctx context.Context, houseID int64, userR
 		slog.Int64("house_id", houseID),
 	)
 
+	// Cache hit
+	cachedList, ok := s.cache.Get(houseID)
+	if ok {
+		var flats []*model.Flat
+		err := json.Unmarshal([]byte(cachedList), &flats)
+		if err != nil {
+			log.Error("invalid json in cache", sl.Err(err))
+			s.cache.Remove(houseID)
+		} else {
+			return flats, nil
+		}
+	}
+
+	// Fetch from database
 	flatList, err := s.flatRepository.FlatListByHouseID(ctx, houseID)
 	if err != nil {
 		log.Error("failed to get flat list", sl.Err(err))
 		return nil, err
+	}
+
+	// Cache result
+	flatsJSON, err := json.Marshal(flatList)
+	if err != nil {
+		log.Error("failed to marshal flat list", sl.Err(err))
+	} else {
+		s.cache.Set(houseID, string(flatsJSON))
 	}
 
 	return filterFlats(flatList, userRole), nil

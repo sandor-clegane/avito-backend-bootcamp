@@ -13,12 +13,13 @@ func (r *Repository) SubsciptionListByHouseID(ctx context.Context, houseID int64
 	// Prepare the query to fetch subscriptions for a specific house
 	query :=
 		`SELECT *
-	 FROM subscription
+	 FROM subscriptions
 	 WHERE house_id = ?`
 
 	// Fetch the subscriptions using the prepared query
 	var subscriptions []*model.Subscription
-	err := r.db.SelectContext(ctx, &subscriptions, query, houseID)
+	err := r.getter.DefaultTrOrDB(ctx, r.db).
+		SelectContext(ctx, &subscriptions, query, houseID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,11 +31,12 @@ func (r *Repository) SubsciptionListByHouseID(ctx context.Context, houseID int64
 func (r *Repository) SaveSubscritpion(ctx context.Context, houseID int64, email string) error {
 	// Prepare the query to insert the subscription
 	query :=
-		`INSERT INTO subscription (house_id, email)
+		`INSERT INTO subscriptions (house_id, email)
 	 VALUES (?, ?)`
 
 	// Insert the subscription using the prepared query
-	_, err := r.db.ExecContext(ctx, query, houseID, email)
+	_, err := r.getter.DefaultTrOrDB(ctx, r.db).
+		ExecContext(ctx, query, houseID, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return repo.ErrConstraintViolation

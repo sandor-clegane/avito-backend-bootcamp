@@ -43,23 +43,23 @@ func New(
 	router.Use(middleware.URLFormat)
 
 	// Доступно всем, авторизация не нужна
-	router.Get("/dummyLogin", h.HandleDummyLogin(authService))
-	router.Post("/login", h.HandleLogin(validate, authService))
-	router.Post("/signup", h.HandleSignup(validate, authService))
+	router.Get("/dummyLogin", h.HandleDummyLogin(log, authService))
+	router.Post("/login", h.HandleLogin(log, validate, authService))
+	router.Post("/signup", h.HandleSignup(log, validate, authService))
 
 	// Доступно любому авторизированному
 	router.Group(func(r chi.Router) {
 		r.Use(mwr.NewAuthModeratorOrClient(jwtManager))
-		r.Get("/house/{id}", h.HandleGetHouse(flatService))
-		r.Post("/house/{id}/subscribe", h.HandleSubscribeHouse(validate, subService))
-		r.Post("/flat/create", h.HandleCreateFlat(validate, flatService))
+		r.Get("/house/{id}", h.HandleGetHouse(log, flatService))
+		r.Post("/house/{id}/subscribe", h.HandleSubscribeHouse(log, validate, subService))
+		r.Post("/flat/create", h.HandleCreateFlat(log, validate, flatService))
 	})
 
 	// Доступно только для модераторов
 	router.Group(func(r chi.Router) {
 		r.Use(mwr.NewAuthModerator(jwtManager))
-		r.Post("/house/create", h.HandleCreateHouse(validate, houseService))
-		r.Post("/flat/update", h.HandleUpdateFlat(validate, flatService))
+		r.Post("/house/create", h.HandleCreateHouse(log, validate, houseService))
+		r.Post("/flat/update", h.HandleUpdateFlat(log, validate, flatService))
 	})
 
 	return &Server{
