@@ -10,15 +10,15 @@ https://github.com/avito-tech/backend-bootcamp-assignment-2024
 ## Getting Started
 ### Installing
 Clone the repo
-   ```sh
-   git clone https://github.com/sandor-clegane/avito-backend-bootcamp
-   ```
+```sh
+git clone https://github.com/sandor-clegane/avito-backend-bootcamp
+```
 
 ### Executing program
 Run containers
-    ```sh
-    docker compose up -d
-    ```
+```sh
+docker compose up -d
+```
 
 ## Roadmap
 ### Дополнительные задания
