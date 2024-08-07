@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	h "avito-backend-bootcamp/internal/http/handlers"
 	"avito-backend-bootcamp/internal/model"
 	pkgCtx "avito-backend-bootcamp/pkg/utils/ctx"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
+	"context"
+
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -13,11 +16,15 @@ import (
 	"github.com/go-chi/render"
 )
 
+type FlatService interface {
+	GetFlatListByHouseID(ctx context.Context, houseID int64, userRole model.UserType) ([]*model.Flat, error)
+}
+
 type getHouseResponse struct {
 	Flats []*model.Flat
 }
 
-func HandleGetHouse(log *slog.Logger, flatService FlatService) http.HandlerFunc {
+func New(log *slog.Logger, flatService FlatService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Setup logger
 		const op = "handlers.HandleGetHouse"
@@ -43,7 +50,7 @@ func HandleGetHouse(log *slog.Logger, flatService FlatService) http.HandlerFunc 
 		flatList, err := flatService.GetFlatListByHouseID(r.Context(), houseID, model.MustParseUserType(userTypeStr))
 		if err != nil {
 			log.Error("failed to get list of flats for house", sl.Err(err))
-			writeInternalError(r, w, err)
+			h.WriteInternalError(r, w, err)
 			return
 		}
 

@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	h "avito-backend-bootcamp/internal/http/handlers"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -14,11 +16,15 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+type SubscriptionService interface {
+	CreateSubscription(ctx context.Context, houseID int64, email string) error
+}
+
 type subscribeHouseRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
-func HandleSubscribeHouse(log *slog.Logger, validate *validator.Validate, subService SubscriptionService) http.HandlerFunc {
+func New(log *slog.Logger, validate *validator.Validate, subService SubscriptionService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Setup logger
 		const op = "handlers.HandleSubscribeHouse"
@@ -60,7 +66,7 @@ func HandleSubscribeHouse(log *slog.Logger, validate *validator.Validate, subSer
 		err = subService.CreateSubscription(r.Context(), houseID, req.Email)
 		if err != nil {
 			log.Error("failed to create subscription", sl.Err(err))
-			writeInternalError(r, w, err)
+			h.WriteInternalError(r, w, err)
 			return
 		}
 

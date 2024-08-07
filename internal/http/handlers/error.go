@@ -14,7 +14,7 @@ type errorResponse struct {
 	Code      int    `json:"code"`
 }
 
-func writeInternalError(r *http.Request, w http.ResponseWriter, err error) {
+func WriteInternalError(r *http.Request, w http.ResponseWriter, err error) {
 	render.Status(r, http.StatusInternalServerError)
 	w.Header().Set("Retry-After", "30")
 	render.JSON(w, r, errorResponse{

@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	h "avito-backend-bootcamp/internal/http/handlers"
+	"avito-backend-bootcamp/internal/model"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
+	"context"
+
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -11,6 +15,10 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 )
+
+type FlatService interface {
+	CreateFlat(ctx context.Context, houseID, price, fooms int64) (*model.Flat, error)
+}
 
 type createFlatRequest struct {
 	HouseID int64 `json:"house_id" validate:"required,gt=0"`
@@ -26,7 +34,7 @@ type createFlatResponse struct {
 	Status  string `json:"status"`
 }
 
-func HandleCreateFlat(log *slog.Logger, validate *validator.Validate, flatService FlatService) http.HandlerFunc {
+func New(log *slog.Logger, validate *validator.Validate, flatService FlatService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Setup logger
 		const op = "handlers.HandleCreateFlat"
@@ -58,7 +66,7 @@ func HandleCreateFlat(log *slog.Logger, validate *validator.Validate, flatServic
 		flat, err := flatService.CreateFlat(r.Context(), req.HouseID, req.Price, req.Rooms)
 		if err != nil {
 			log.Error("failed to create flat", sl.Err(err))
-			writeInternalError(r, w, err)
+			h.WriteInternalError(r, w, err)
 			return
 		}
 

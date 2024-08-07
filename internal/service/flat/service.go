@@ -11,28 +11,11 @@ import (
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 )
 
-type FlatRepository interface {
-	GetFlat(ctx context.Context, ID int64) (*model.Flat, error)
-	SaveFlat(ctx context.Context, houseID, price, fooms int64) (*model.Flat, error)
-	UpdateFlat(ctx context.Context, flat *model.Flat) (*model.Flat, error)
-	FlatListByHouseID(ctx context.Context, houseID int64) ([]*model.Flat, error)
-}
-
-type EventRepository interface {
-	PublishEvent(ctx context.Context, eventType model.EventType, payload string) error
-}
-
-type Cache[K comparable, V any] interface {
-	Set(key K, value V)
-	Get(key K) (V, bool)
-	Remove(key K)
-}
-
 type Service struct {
 	log             *slog.Logger
 	flatRepository  FlatRepository
 	eventRepository EventRepository
-	cache           Cache[int64, string]
+	cache           Cache
 	trManager       *manager.Manager
 }
 
@@ -40,7 +23,7 @@ func New(
 	log *slog.Logger,
 	flatRepository FlatRepository,
 	eventRepository EventRepository,
-	cache Cache[int64, string],
+	cache Cache,
 	trManager *manager.Manager,
 ) *Service {
 	return &Service{
@@ -67,10 +50,6 @@ func (s *Service) CreateFlat(ctx context.Context, houseID, price, rooms int64) (
 		log.Error("failed to save flat", sl.Err(err))
 		return nil, err
 	}
-
-	// it is necessary to invalidate the cache
-	// since new flat was created
-	s.cache.Remove(flat.HouseID)
 
 	return flat, nil
 }
@@ -111,15 +90,15 @@ func (s *Service) UpdateFlat(ctx context.Context, ID int64, status model.FlatSta
 			return err
 		}
 
-		// it is necessary to invalidate the cache
-		// since flat was updated
-		s.cache.Remove(flat.HouseID)
-
 		if flat.Status == model.StatusApproved {
 			eventPayload := fmt.Sprintf(
 				`{"house_id": %d}`,
 				flat.HouseID,
 			)
+
+			// it is necessary to invalidate the cache
+			// since flat status was updated to approve
+			s.cache.Remove(flat.HouseID)
 
 			err = s.eventRepository.PublishEvent(ctx, model.FlatApproved, eventPayload)
 			if err != nil {
@@ -136,12 +115,34 @@ func (s *Service) UpdateFlat(ctx context.Context, ID int64, status model.FlatSta
 
 // GetFlatListByHouseID retrieves a list of flats for a given house ID,
 // applying visibility rules based on the user role.
-func (s *Service) GetFlatListByHouseID(ctx context.Context, houseID int64, userRole model.UserType) ([]*model.Flat, error) {
+func (s *Service) GetFlatListByHouseID(ctx context.Context, houseID int64, userRole model.UserType) (flatList []*model.Flat, err error) {
 	const op = "flat.GetFlatListByHouseID"
 
 	log := s.log.With(
 		slog.String("op", op),
 		slog.String("user_type", string(userRole)),
+		slog.Int64("house_id", houseID),
+	)
+
+	switch userRole {
+	case model.Moderator:
+		flatList, err = s.flatListForAdmin(ctx, houseID)
+	case model.Client:
+		flatList, err = s.flatListForClient(ctx, houseID)
+	}
+
+	if err != nil {
+		log.Error("failed to get flat list", sl.Err(err))
+		return nil, err
+	}
+
+	return flatList, nil
+}
+
+func (s *Service) flatListForClient(ctx context.Context, houseID int64) ([]*model.Flat, error) {
+	const op = "flat.flatListForClient"
+	log := s.log.With(
+		slog.String("op", op),
 		slog.Int64("house_id", houseID),
 	)
 
@@ -165,31 +166,25 @@ func (s *Service) GetFlatListByHouseID(ctx context.Context, houseID int64, userR
 		return nil, err
 	}
 
+	// Filter active flats
+	activeFlatList := make([]*model.Flat, 0, len(flatList))
+	for _, flat := range flatList {
+		if flat.Status == model.StatusApproved {
+			activeFlatList = append(activeFlatList, flat)
+		}
+	}
+
 	// Cache result
-	flatsJSON, err := json.Marshal(flatList)
+	flatsJSON, err := json.Marshal(activeFlatList)
 	if err != nil {
 		log.Error("failed to marshal flat list", sl.Err(err))
 	} else {
 		s.cache.Set(houseID, string(flatsJSON))
 	}
 
-	return filterFlats(flatList, userRole), nil
+	return activeFlatList, nil
 }
 
-// filterFlats filters the flat list based on the user role.
-func filterFlats(flatList []*model.Flat, userRole model.UserType) []*model.Flat {
-	var visibleFlats []*model.Flat
-
-	for _, flat := range flatList {
-		switch userRole {
-		case model.Client:
-			if flat.Status == model.StatusApproved {
-				visibleFlats = append(visibleFlats, flat)
-			}
-		case model.Moderator:
-			visibleFlats = append(visibleFlats, flat)
-		}
-	}
-
-	return visibleFlats
+func (s *Service) flatListForAdmin(ctx context.Context, houseID int64) ([]*model.Flat, error) {
+	return s.flatRepository.FlatListByHouseID(ctx, houseID)
 }

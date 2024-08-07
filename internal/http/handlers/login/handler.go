@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
+	h "avito-backend-bootcamp/internal/http/handlers"
 	"avito-backend-bootcamp/internal/service/auth"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
@@ -15,6 +17,10 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
+
+type AuthService interface {
+	Login(ctx context.Context, ID uuid.UUID, password string) (string, error)
+}
 
 type loginRequest struct {
 	ID       string `json:"id" validate:"required,uuid"`
@@ -25,7 +31,7 @@ type loginResponse struct {
 	Token string `json:"token"`
 }
 
-func HandleLogin(log *slog.Logger, validate *validator.Validate, authService AuthService) http.HandlerFunc {
+func New(log *slog.Logger, validate *validator.Validate, authService AuthService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Setup logger
 		const op = "handlers.HandleLogin"
@@ -71,7 +77,7 @@ func HandleLogin(log *slog.Logger, validate *validator.Validate, authService Aut
 			}
 
 			log.Error("login failed", sl.Err(err))
-			writeInternalError(r, w, err)
+			h.WriteInternalError(r, w, err)
 			return
 		}
 

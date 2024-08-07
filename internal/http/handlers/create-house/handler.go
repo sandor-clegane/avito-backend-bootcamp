@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	h "avito-backend-bootcamp/internal/http/handlers"
+	"avito-backend-bootcamp/internal/model"
 	dbUtil "avito-backend-bootcamp/pkg/utils/db"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
+	"context"
 	"log/slog"
 
 	"encoding/json"
@@ -14,6 +17,10 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 )
+
+type HouseService interface {
+	CreateHouse(ctx context.Context, address, developer string, year int64) (*model.House, error)
+}
 
 type createHouseRequest struct {
 	Address   string `json:"address" validate:"required"`
@@ -30,7 +37,7 @@ type createHouseResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func HandleCreateHouse(log *slog.Logger, validate *validator.Validate, houseService HouseService) http.HandlerFunc {
+func New(log *slog.Logger, validate *validator.Validate, houseService HouseService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Setup logger
 		const op = "handlers.HandleCreateHouse"
@@ -62,7 +69,7 @@ func HandleCreateHouse(log *slog.Logger, validate *validator.Validate, houseServ
 		house, err := houseService.CreateHouse(r.Context(), req.Address, req.Developer, req.Year)
 		if err != nil {
 			log.Error("create house failed", sl.Err(err))
-			writeInternalError(r, w, err)
+			h.WriteInternalError(r, w, err)
 			return
 		}
 

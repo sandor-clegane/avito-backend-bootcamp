@@ -28,7 +28,7 @@ type Container struct {
 	cfg *config.Config
 	log *slog.Logger
 
-	flatCache   *cache.Cache[int64, string]
+	flatCache   *cache.TTLCache[int64, string]
 	validator   *validator.Validate
 	jwt         *jwt.Manager
 	emailClient *sender.Sender
@@ -77,9 +77,9 @@ func (c *Container) GetDB() *sqlx.DB {
 	})
 }
 
-func (c *Container) GetFlatCache() *cache.Cache[int64, string] {
-	return get(&c.flatCache, func() *cache.Cache[int64, string] {
-		return cache.New[int64, string]()
+func (c *Container) GetFlatCache() *cache.TTLCache[int64, string] {
+	return get(&c.flatCache, func() *cache.TTLCache[int64, string] {
+		return cache.NewTTL[int64, string](c.cfg.Cache.TTL)
 	})
 }
 

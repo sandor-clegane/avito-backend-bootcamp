@@ -7,10 +7,6 @@ import (
 	"log/slog"
 )
 
-type HouseRepository interface {
-	SaveHouse(ctx context.Context, address, developer string, year int64) (*model.House, error)
-}
-
 type Service struct {
 	log            *slog.Logger
 	houseRpository HouseRepository

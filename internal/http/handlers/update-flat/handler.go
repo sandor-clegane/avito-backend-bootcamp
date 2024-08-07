@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	h "avito-backend-bootcamp/internal/http/handlers"
 	"avito-backend-bootcamp/internal/model"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -12,6 +14,10 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 )
+
+type FlatService interface {
+	UpdateFlat(ctx context.Context, ID int64, status model.FlatStatus) (*model.Flat, error)
+}
 
 type updateFlatRequest struct {
 	ID     int64  `json:"id" validate:"required,gt=0"`
@@ -26,7 +32,7 @@ type updateFlatResponse struct {
 	Status  string `json:"status"`
 }
 
-func HandleUpdateFlat(log *slog.Logger, validate *validator.Validate, flatService FlatService) http.HandlerFunc {
+func New(log *slog.Logger, validate *validator.Validate, flatService FlatService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Setup logger
 		const op = "handlers.HandleUpdateFlat"
@@ -67,14 +73,14 @@ func HandleUpdateFlat(log *slog.Logger, validate *validator.Validate, flatServic
 		flat, err := flatService.UpdateFlat(r.Context(), req.ID, status)
 		if err != nil {
 			log.Error("failed to update flat", sl.Err(err))
-			writeInternalError(r, w, err)
+			h.WriteInternalError(r, w, err)
 			return
 		}
 
 		// Return the updated flat details
 		log.Info("flat updated succesfully")
 		render.Status(r, http.StatusOK)
-		render.JSON(w, r, createFlatResponse{
+		render.JSON(w, r, updateFlatResponse{
 			ID:      flat.ID,
 			HouseID: flat.HouseID,
 			Price:   flat.Price,

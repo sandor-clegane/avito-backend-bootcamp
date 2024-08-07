@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	h "avito-backend-bootcamp/internal/http/handlers"
 	"avito-backend-bootcamp/internal/model"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -11,7 +13,12 @@ import (
 
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
+
+type AuthService interface {
+	Register(ctx context.Context, email, password string, role model.UserType) (uuid.UUID, error)
+}
 
 type signupRequest struct {
 	Email    string `json:"email" validate:"required,email"`
@@ -23,7 +30,7 @@ type signupResponse struct {
 	UserID string `json:"user_id"`
 }
 
-func HandleSignup(log *slog.Logger, validate *validator.Validate, authService AuthService) http.HandlerFunc {
+func New(log *slog.Logger, validate *validator.Validate, authService AuthService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Setup logger
 		const op = "handlers.HandleSignup"
@@ -64,7 +71,7 @@ func HandleSignup(log *slog.Logger, validate *validator.Validate, authService Au
 		userID, err := authService.Register(r.Context(), req.Email, req.Password, userTypeParsed)
 		if err != nil {
 			log.Error("failed to register user", sl.Err(err))
-			writeInternalError(r, w, err)
+			h.WriteInternalError(r, w, err)
 			return
 		}
 

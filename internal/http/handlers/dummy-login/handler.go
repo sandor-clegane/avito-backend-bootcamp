@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
+	h "avito-backend-bootcamp/internal/http/handlers"
 	"avito-backend-bootcamp/internal/model"
 	pkgCtx "avito-backend-bootcamp/pkg/utils/ctx"
 	"avito-backend-bootcamp/pkg/utils/sl"
@@ -11,12 +13,16 @@ import (
 	"github.com/go-chi/render"
 )
 
+type AuthService interface {
+	DummyLogin(ctx context.Context, role model.UserType) (string, error)
+}
+
 type dummyLoginResponse struct {
 	Token string `json:"token"`
 }
 
 // HandleDummyLogin упрощенный процесс получения токена для дальнейшего прохождения авторизации
-func HandleDummyLogin(log *slog.Logger, authService AuthService) http.HandlerFunc {
+func New(log *slog.Logger, authService AuthService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Setup logger
 		const op = "handlers.HandleDummyLogin"
@@ -31,7 +37,7 @@ func HandleDummyLogin(log *slog.Logger, authService AuthService) http.HandlerFun
 		userType, err := model.ParseUserType(userTypeRaw)
 		if err != nil {
 			log.Error("invalid query param", sl.Err(err))
-			writeInternalError(r, w, err)
+			h.WriteInternalError(r, w, err)
 			return
 		}
 
@@ -39,7 +45,7 @@ func HandleDummyLogin(log *slog.Logger, authService AuthService) http.HandlerFun
 		token, err := authService.DummyLogin(r.Context(), userType)
 		if err != nil {
 			log.Error("dummy login failed", sl.Err(err))
-			writeInternalError(r, w, err)
+			h.WriteInternalError(r, w, err)
 			return
 		}
 

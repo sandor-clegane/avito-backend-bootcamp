@@ -13,3 +13,5 @@ db:
 jwt:
     token_ttl: 86400s
     secret_key: "test_secret_key"
+cache:
+    ttl: 60s

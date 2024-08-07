@@ -1,8 +1,16 @@
 package server
 
 import (
+	createFlat "avito-backend-bootcamp/internal/http/handlers/create-flat"
+	createHouse "avito-backend-bootcamp/internal/http/handlers/create-house"
+	dummyLogin "avito-backend-bootcamp/internal/http/handlers/dummy-login"
+	getHouse "avito-backend-bootcamp/internal/http/handlers/get-house"
+	login "avito-backend-bootcamp/internal/http/handlers/login"
+	signup "avito-backend-bootcamp/internal/http/handlers/signup"
+	subscribe "avito-backend-bootcamp/internal/http/handlers/subscribe"
+	updateFlat "avito-backend-bootcamp/internal/http/handlers/update-flat"
+
 	"avito-backend-bootcamp/internal/config"
-	h "avito-backend-bootcamp/internal/http/handlers"
 	mwr "avito-backend-bootcamp/internal/http/middleware"
 	"avito-backend-bootcamp/internal/infra/jwt"
 	"avito-backend-bootcamp/internal/service/auth"
@@ -43,23 +51,23 @@ func New(
 	router.Use(middleware.URLFormat)
 
 	// Доступно всем, авторизация не нужна
-	router.Get("/dummyLogin", h.HandleDummyLogin(log, authService))
-	router.Post("/login", h.HandleLogin(log, validate, authService))
-	router.Post("/signup", h.HandleSignup(log, validate, authService))
+	router.Get("/dummyLogin", dummyLogin.New(log, authService))
+	router.Post("/login", login.New(log, validate, authService))
+	router.Post("/signup", signup.New(log, validate, authService))
 
 	// Доступно любому авторизированному
 	router.Group(func(r chi.Router) {
 		r.Use(mwr.NewAuthModeratorOrClient(jwtManager))
-		r.Get("/house/{id}", h.HandleGetHouse(log, flatService))
-		r.Post("/house/{id}/subscribe", h.HandleSubscribeHouse(log, validate, subService))
-		r.Post("/flat/create", h.HandleCreateFlat(log, validate, flatService))
+		r.Get("/house/{id}", getHouse.New(log, flatService))
+		r.Post("/house/{id}/subscribe", subscribe.New(log, validate, subService))
+		r.Post("/flat/create", createFlat.New(log, validate, flatService))
 	})
 
 	// Доступно только для модераторов
 	router.Group(func(r chi.Router) {
 		r.Use(mwr.NewAuthModerator(jwtManager))
-		r.Post("/house/create", h.HandleCreateHouse(log, validate, houseService))
-		r.Post("/flat/update", h.HandleUpdateFlat(log, validate, flatService))
+		r.Post("/house/create", createHouse.New(log, validate, houseService))
+		r.Post("/flat/update", updateFlat.New(log, validate, flatService))
 	})
 
 	return &Server{
