@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - '**'
+  pull_request:
+    branches:
+      - main
+      - '**' 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.21.6'
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Build API
+        run: go build ./cmd/house-service/main.go
+
+      - name: Build Migrator
+        run: go build ./cmd/migrator/main.go

@@ -1,3 +1,5 @@
+![Build](https://github.com/sandor-clegane/avito-backend-bootcamp/actions/workflows/build.yml/badge.svg)
+
 # avito-backend-bootcamp
 Тестовое задание для отбора на Avito Backend Bootcamp
 
