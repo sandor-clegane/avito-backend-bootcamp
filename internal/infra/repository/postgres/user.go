@@ -17,8 +17,8 @@ func (r *Repository) SaveUser(ctx context.Context, email, password string, role 
 
 	// Prepare the query to insert the user
 	query :=
-		`INSERT INTO users (id, email, password, role)
-	 VALUES (?, ?, ?, ?)`
+		"INSERT INTO users (id, email, password, type) " +
+			"VALUES ($1, $2, $3, $4)"
 
 	// Insert the user using the prepared query
 	_, err := r.getter.DefaultTrOrDB(ctx, r.db).
@@ -37,9 +37,9 @@ func (r *Repository) SaveUser(ctx context.Context, email, password string, role 
 func (r *Repository) GetUser(ctx context.Context, ID uuid.UUID) (*model.User, error) {
 	// Prepare the query to fetch the user by ID
 	query :=
-		`SELECT *
-	 FROM users
-	 WHERE id = ?`
+		"SELECT * " +
+			"FROM users " +
+			"WHERE id = $1"
 
 	// Fetch the user using the prepared query
 	var user model.User

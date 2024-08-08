@@ -21,22 +21,27 @@ func New(secretKey string, tokenTTL time.Duration) *Manager {
 
 // CreateToken creates JWT tokens with claims
 func (m Manager) CreateToken(role string) (string, error) {
-	// Create a new JWT token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"iss": "house-service",
 		"aud": role,
 		"exp": time.Now().Add(m.tokenTTL).Unix(),
-		"iat": time.Now().Unix(),
 	})
 
 	// Sign the previously created token
-	return token.SignedString([]byte(m.secretKey))
+	signedToken, err := token.SignedString([]byte(m.secretKey))
+	if err != nil {
+		return "", err
+	}
+
+	return signedToken, nil
 }
 
 func (m Manager) ParseToken(tokenString string) (jwt.Claims, error) {
 	// Parse the token with the secret key
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return m.secretKey, nil
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(m.secretKey), nil
 	})
 
 	// Check for verification errors

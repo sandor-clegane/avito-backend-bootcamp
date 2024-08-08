@@ -53,7 +53,7 @@ func New(
 	// Доступно всем, авторизация не нужна
 	router.Get("/dummyLogin", dummyLogin.New(log, authService))
 	router.Post("/login", login.New(log, validate, authService))
-	router.Post("/signup", signup.New(log, validate, authService))
+	router.Post("/register", signup.New(log, validate, authService))
 
 	// Доступно любому авторизированному
 	router.Group(func(r chi.Router) {

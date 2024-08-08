@@ -3,10 +3,12 @@ package handlers
 import (
 	h "avito-backend-bootcamp/internal/http/handlers"
 	"avito-backend-bootcamp/internal/model"
+	"avito-backend-bootcamp/internal/service/auth"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -70,6 +72,13 @@ func New(log *slog.Logger, validate *validator.Validate, authService AuthService
 		// Register the user
 		userID, err := authService.Register(r.Context(), req.Email, req.Password, userTypeParsed)
 		if err != nil {
+			if errors.Is(err, auth.ErrEmailAlreadyUser) {
+				log.Error("user with given email already exist", sl.Err(err))
+				render.Status(r, http.StatusNotFound)
+				render.JSON(w, r, resp.NewError(err))
+				return
+			}
+
 			log.Error("failed to register user", sl.Err(err))
 			h.WriteInternalError(r, w, err)
 			return

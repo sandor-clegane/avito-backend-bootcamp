@@ -12,8 +12,8 @@ import (
 func (r *Repository) SaveHouse(ctx context.Context, address, developer string, year int64) (*model.House, error) {
 	// Prepare the query to insert the house
 	query :=
-		`INSERT INTO houses (address, developer, year)
-	 VALUES (?, ?, ?)`
+		"INSERT INTO houses (address, developer, year) " +
+			"VALUES ($1, $2, $3)"
 
 	// Insert the house using the prepared query
 	result, err := r.getter.DefaultTrOrDB(ctx, r.db).
@@ -43,9 +43,9 @@ func (r *Repository) SaveHouse(ctx context.Context, address, developer string, y
 func (r *Repository) GetHouse(ctx context.Context, id int64) (*model.House, error) {
 	// Prepare the query to fetch the house by ID
 	query :=
-		`SELECT *
-	 FROM houses
-	 WHERE id = ?`
+		"SELECT * " +
+			"FROM houses " +
+			"WHERE id = $1"
 
 	// Fetch the house using the prepared query
 	var house model.House

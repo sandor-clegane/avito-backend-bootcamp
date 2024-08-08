@@ -37,12 +37,12 @@ func ParseFlatStatus(str string) (FlatStatus, error) {
 }
 
 func (st *FlatStatus) Scan(value interface{}) error {
-	str, ok := value.(string)
+	str, ok := value.([]byte)
 	if !ok {
 		return errors.New("faile type assertion")
 	}
 
-	status, err := ParseFlatStatus(str)
+	status, err := ParseFlatStatus(string(str))
 	if err != nil {
 		return err
 	}
@@ -88,12 +88,12 @@ func ParseUserType(str string) (UserType, error) {
 }
 
 func (ut *UserType) Scan(value interface{}) error {
-	str, ok := value.(string)
+	str, ok := value.([]byte)
 	if !ok {
 		return errors.New("faile type assertion")
 	}
 
-	status, err := ParseUserType(str)
+	status, err := ParseUserType(string(str))
 	if err != nil {
 		return err
 	}
@@ -128,12 +128,12 @@ func ParseEventType(str string) (EventType, error) {
 }
 
 func (ut *EventType) Scan(value interface{}) error {
-	str, ok := value.(string)
+	str, ok := value.([]byte)
 	if !ok {
 		return errors.New("faile type assertion")
 	}
 
-	status, err := ParseEventType(str)
+	status, err := ParseEventType(string(str))
 	if err != nil {
 		return err
 	}

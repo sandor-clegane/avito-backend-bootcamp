@@ -22,14 +22,14 @@ func authMiddleware(jwtManager JWT, allowedUserTypes []model.UserType) func(next
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Retrieve the token from the cookie
-			tokenString, err := r.Cookie("Authorization")
+			cookie, err := r.Cookie("Authorization")
 			if err != nil {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
 
 			// Verify the token
-			token, err := jwtManager.ParseToken(tokenString.String())
+			token, err := jwtManager.ParseToken(cookie.Value)
 			if err != nil {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return

@@ -12,8 +12,8 @@ import (
 func (r *Repository) PublishEvent(ctx context.Context, eventType model.EventType, payload string) error {
 	// Insert the event into the database
 	_, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx,
-		`INSERT INTO events (event_type, payload)
-		VALUES (?, ?)`,
+		"INSERT INTO events (event_type, payload) "+
+			"VALUES ($1, $2)",
 		eventType, payload)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -30,11 +30,11 @@ func (r *Repository) GetNewEvent(ctx context.Context) (*model.Event, error) {
 	// Select the oldest unprocessed event
 	var event model.Event
 	err := r.getter.DefaultTrOrDB(ctx, r.db).GetContext(ctx, &event,
-		`SELECT *
-		FROM events
-		WHERE processed_at IS NULL
-		ORDER BY created_at ASC
-		LIMIT 1`,
+		"SELECT * "+
+			"FROM events "+
+			"WHERE processed_at IS NULL "+
+			"ORDER BY created_at ASC "+
+			"LIMIT 1",
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -52,7 +52,7 @@ func (r *Repository) SetDone(ctx context.Context, eventID int64) error {
 	_, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx,
 		`UPDATE events
 		SET processed_at = NOW()
-		WHERE id = ?`,
+		WHERE id = $1`,
 		eventID)
 	if err != nil {
 		return err
