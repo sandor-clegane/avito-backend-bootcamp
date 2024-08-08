@@ -3,10 +3,12 @@ package handlers
 import (
 	h "avito-backend-bootcamp/internal/http/handlers"
 	"avito-backend-bootcamp/internal/model"
+	housePkg "avito-backend-bootcamp/internal/service/house"
 	dbUtil "avito-backend-bootcamp/pkg/utils/db"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
 	"context"
+	"errors"
 	"log/slog"
 
 	"encoding/json"
@@ -69,6 +71,11 @@ func New(log *slog.Logger, validate *validator.Validate, houseService HouseServi
 		house, err := houseService.CreateHouse(r.Context(), req.Address, req.Developer, req.Year)
 		if err != nil {
 			log.Error("create house failed", sl.Err(err))
+			if errors.Is(err, housePkg.ErrAddressAlreadyUsed) {
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.NewError(err))
+				return
+			}
 			h.WriteInternalError(r, w, err)
 			return
 		}

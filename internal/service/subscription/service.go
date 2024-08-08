@@ -1,8 +1,10 @@
 package sub
 
 import (
+	"avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/pkg/utils/sl"
 	"context"
+	"errors"
 	"log/slog"
 )
 
@@ -22,6 +24,8 @@ func New(log *slog.Logger, repository SubscriberRepository) *Service {
 	}
 }
 
+var ErrInvalidSubscription = errors.New("this house does not exist or there is no user with this address")
+
 func (s *Service) CreateSubscription(ctx context.Context, houseID int64, email string) error {
 	const op = "subscription.CreateSubscription"
 
@@ -33,6 +37,9 @@ func (s *Service) CreateSubscription(ctx context.Context, houseID int64, email s
 
 	err := s.repository.SaveSubscritpion(ctx, houseID, email)
 	if err != nil {
+		if errors.Is(err, repository.ErrConstraintViolation) {
+			return ErrInvalidSubscription
+		}
 		log.Error("failed to save subscription", sl.Err(err))
 		return err
 	}

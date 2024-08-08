@@ -1,9 +1,11 @@
 package emailsender
 
 import (
+	"avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/internal/model"
 	r "avito-backend-bootcamp/pkg/utils/retry"
 	"avito-backend-bootcamp/pkg/utils/sl"
+	"errors"
 	"fmt"
 
 	"context"
@@ -93,13 +95,11 @@ func (s *Service) StartProcessEvents(ctx context.Context, handlePeriod time.Dura
 func (s *Service) processEvent(ctx context.Context) error {
 	event, err := s.eventRepository.GetNewEvent(ctx)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			s.log.Info("no events to send")
+			return nil
+		}
 		return fmt.Errorf("failed to get new event: %w", err)
-	}
-
-	// no new events
-	if event == nil {
-		s.log.Info("no events to send")
-		return nil
 	}
 
 	// Unmarshal the event payload

@@ -1,8 +1,10 @@
 package postgres
 
 import (
+	repo "avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/internal/model"
 	dbUtil "avito-backend-bootcamp/pkg/utils/db"
+	"errors"
 
 	"context"
 	"database/sql"
@@ -12,19 +14,17 @@ import (
 func (r *Repository) SaveHouse(ctx context.Context, address, developer string, year int64) (*model.House, error) {
 	// Prepare the query to insert the house
 	query :=
-		"INSERT INTO houses (address, developer, year) " +
-			"VALUES ($1, $2, $3)"
+		"INSERT INTO houses (address, developer, year_of_construction) " +
+			"VALUES ($1, $2, $3) RETURNING id"
 
 	// Insert the house using the prepared query
-	result, err := r.getter.DefaultTrOrDB(ctx, r.db).
-		ExecContext(ctx, query, address, dbUtil.NewNullString(developer), year)
+	var houseID int64
+	err := r.getter.DefaultTrOrDB(ctx, r.db).
+		GetContext(ctx, &houseID, query, address, dbUtil.NewNullString(developer), year)
 	if err != nil {
-		return nil, err
-	}
-
-	// Get the last inserted ID
-	houseID, err := result.LastInsertId()
-	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repo.ErrConstraintViolation
+		}
 		return nil, err
 	}
 
@@ -52,6 +52,9 @@ func (r *Repository) GetHouse(ctx context.Context, id int64) (*model.House, erro
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		GetContext(ctx, &house, query, id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repo.ErrNotFound
+		}
 		return nil, err
 	}
 

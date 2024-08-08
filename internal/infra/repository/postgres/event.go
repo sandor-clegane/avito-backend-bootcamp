@@ -12,7 +12,7 @@ import (
 func (r *Repository) PublishEvent(ctx context.Context, eventType model.EventType, payload string) error {
 	// Insert the event into the database
 	_, err := r.getter.DefaultTrOrDB(ctx, r.db).ExecContext(ctx,
-		"INSERT INTO events (event_type, payload) "+
+		"INSERT INTO events (type, payload) "+
 			"VALUES ($1, $2)",
 		eventType, payload)
 	if err != nil {
@@ -38,7 +38,7 @@ func (r *Repository) GetNewEvent(ctx context.Context) (*model.Event, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, repo.ErrNotFound
 		}
 		return nil, err
 	}

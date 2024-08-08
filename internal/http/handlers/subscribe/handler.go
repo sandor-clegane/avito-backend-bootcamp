@@ -2,10 +2,12 @@ package handlers
 
 import (
 	h "avito-backend-bootcamp/internal/http/handlers"
+	sub "avito-backend-bootcamp/internal/service/subscription"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -66,6 +68,11 @@ func New(log *slog.Logger, validate *validator.Validate, subService Subscription
 		err = subService.CreateSubscription(r.Context(), houseID, req.Email)
 		if err != nil {
 			log.Error("failed to create subscription", sl.Err(err))
+			if errors.Is(err, sub.ErrInvalidSubscription) {
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.NewError(err))
+				return
+			}
 			h.WriteInternalError(r, w, err)
 			return
 		}

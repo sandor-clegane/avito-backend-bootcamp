@@ -58,6 +58,9 @@ func (r *Repository) UpdateFlat(ctx context.Context, flat *model.Flat) (*model.F
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		GetContext(ctx, flat, query, flat.HouseID, flat.Price, flat.Rooms, flat.Status, flat.ID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, repo.ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -69,7 +72,7 @@ func (r *Repository) FlatListByHouseID(ctx context.Context, houseID int64) ([]*m
 	query :=
 		"SELECT * " +
 			"FROM flats " +
-			"WHERE house_id = ?"
+			"WHERE house_id = $1"
 
 	var flats []*model.Flat
 	err := r.getter.DefaultTrOrDB(ctx, r.db).

@@ -43,11 +43,11 @@ func New(log *slog.Logger, flatService FlatService) http.HandlerFunc {
 		}
 
 		// Extract audience from the context
-		userTypeStr := r.Context().Value(pkgCtx.KeyUserType).(string)
+		userType := r.Context().Value(pkgCtx.KeyUserType).(model.UserType)
 		log.Info("audience extracted from request")
 
 		// Retrieve flats associated with the house ID
-		flatList, err := flatService.GetFlatListByHouseID(r.Context(), houseID, model.MustParseUserType(userTypeStr))
+		flatList, err := flatService.GetFlatListByHouseID(r.Context(), houseID, userType)
 		if err != nil {
 			log.Error("failed to get list of flats for house", sl.Err(err))
 			h.WriteInternalError(r, w, err)

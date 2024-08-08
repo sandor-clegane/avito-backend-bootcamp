@@ -1,10 +1,12 @@
 package flat
 
 import (
+	"avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/internal/model"
 	"avito-backend-bootcamp/pkg/utils/sl"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -35,6 +37,8 @@ func New(
 	}
 }
 
+var ErrHouseNotExist = errors.New("failed to create flat in non-exist house")
+
 func (s *Service) CreateFlat(ctx context.Context, houseID, price, rooms int64) (*model.Flat, error) {
 	const op = "flat.UpdateCreateFlatFlat"
 
@@ -48,11 +52,16 @@ func (s *Service) CreateFlat(ctx context.Context, houseID, price, rooms int64) (
 	flat, err := s.flatRepository.SaveFlat(ctx, houseID, price, rooms)
 	if err != nil {
 		log.Error("failed to save flat", sl.Err(err))
+		if errors.Is(err, repository.ErrConstraintViolation) {
+			return nil, ErrHouseNotExist
+		}
 		return nil, err
 	}
 
 	return flat, nil
 }
+
+var ErrFlatNotExist = errors.New("this flat does not exist")
 
 func (s *Service) UpdateFlat(ctx context.Context, ID int64, status model.FlatStatus) (flat *model.Flat, err error) {
 	const op = "flat.UpdateFlat"
@@ -64,6 +73,10 @@ func (s *Service) UpdateFlat(ctx context.Context, ID int64, status model.FlatSta
 
 	flat, err = s.flatRepository.GetFlat(ctx, ID)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			log.Error("flat does not exist", sl.Err(err))
+			return nil, ErrFlatNotExist
+		}
 		log.Error("failed to find flat", sl.Err(err))
 		return nil, err
 	}
@@ -83,7 +96,7 @@ func (s *Service) UpdateFlat(ctx context.Context, ID int64, status model.FlatSta
 		return nil, err
 	}
 
-	s.trManager.Do(ctx, func(ctx context.Context) error {
+	err = s.trManager.Do(ctx, func(ctx context.Context) error {
 		flat, err = s.flatRepository.UpdateFlat(ctx, flat)
 		if err != nil {
 			log.Error("failed to update flat in db", sl.Err(err))
@@ -110,6 +123,11 @@ func (s *Service) UpdateFlat(ctx context.Context, ID int64, status model.FlatSta
 		return nil
 	})
 
+	if err != nil {
+		log.Error("failed to update flat and publish event", sl.Err(err))
+		return nil, err
+	}
+
 	return flat, nil
 }
 
@@ -134,6 +152,10 @@ func (s *Service) GetFlatListByHouseID(ctx context.Context, houseID int64, userR
 	if err != nil {
 		log.Error("failed to get flat list", sl.Err(err))
 		return nil, err
+	}
+
+	if len(flatList) == 0 {
+		return []*model.Flat{}, nil
 	}
 
 	return flatList, nil

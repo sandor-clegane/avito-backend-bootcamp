@@ -3,9 +3,11 @@ package handlers
 import (
 	h "avito-backend-bootcamp/internal/http/handlers"
 	"avito-backend-bootcamp/internal/model"
+	flatPkg "avito-backend-bootcamp/internal/service/flat"
 	resp "avito-backend-bootcamp/pkg/utils/response"
 	"avito-backend-bootcamp/pkg/utils/sl"
 	"context"
+	"errors"
 
 	"encoding/json"
 	"fmt"
@@ -66,6 +68,11 @@ func New(log *slog.Logger, validate *validator.Validate, flatService FlatService
 		flat, err := flatService.CreateFlat(r.Context(), req.HouseID, req.Price, req.Rooms)
 		if err != nil {
 			log.Error("failed to create flat", sl.Err(err))
+			if errors.Is(err, flatPkg.ErrHouseNotExist) {
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.NewError(err))
+				return
+			}
 			h.WriteInternalError(r, w, err)
 			return
 		}

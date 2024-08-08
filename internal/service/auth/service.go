@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"math/rand"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -39,12 +38,6 @@ func New(log *slog.Logger, jwt JWT, repository UserRepository) *Service {
 
 func (s *Service) DummyLogin(ctx context.Context, role model.UserType) (string, error) {
 	const op = "Auth.DummyLogin"
-
-	// Имитация неуспешной авторизации
-	errorProbability := 0.1
-	if rand.Float64() < errorProbability {
-		return "", errors.New("internal error")
-	}
 
 	token, err := s.jwt.CreateToken(string(role))
 	if err != nil {
