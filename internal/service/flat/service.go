@@ -9,8 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 )
 
 type Service struct {
@@ -18,7 +16,7 @@ type Service struct {
 	flatRepository  FlatRepository
 	eventRepository EventRepository
 	cache           Cache
-	trManager       *manager.Manager
+	trManager       TrManager
 }
 
 func New(
@@ -26,7 +24,7 @@ func New(
 	flatRepository FlatRepository,
 	eventRepository EventRepository,
 	cache Cache,
-	trManager *manager.Manager,
+	trManager TrManager,
 ) *Service {
 	return &Service{
 		log:             log,

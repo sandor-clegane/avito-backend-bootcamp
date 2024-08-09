@@ -193,3 +193,40 @@ func (mr *MockCacheMockRecorder) Set(key, value interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockCache)(nil).Set), key, value)
 }
+
+// MockTrManager is a mock of TrManager interface.
+type MockTrManager struct {
+	ctrl     *gomock.Controller
+	recorder *MockTrManagerMockRecorder
+}
+
+// MockTrManagerMockRecorder is the mock recorder for MockTrManager.
+type MockTrManagerMockRecorder struct {
+	mock *MockTrManager
+}
+
+// NewMockTrManager creates a new mock instance.
+func NewMockTrManager(ctrl *gomock.Controller) *MockTrManager {
+	mock := &MockTrManager{ctrl: ctrl}
+	mock.recorder = &MockTrManagerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTrManager) EXPECT() *MockTrManagerMockRecorder {
+	return m.recorder
+}
+
+// Do mocks base method.
+func (m *MockTrManager) Do(ctx context.Context, fn func(context.Context) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Do", ctx, fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Do indicates an expected call of Do.
+func (mr *MockTrManagerMockRecorder) Do(ctx, fn interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Do", reflect.TypeOf((*MockTrManager)(nil).Do), ctx, fn)
+}

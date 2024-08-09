@@ -1,23 +1,12 @@
 env: "local"
-# http_server:
-#     address: ":8082"
-#     timeout: 4s
-#     iddle_timeout: 60s
-#     shutdown_timeout: 10s
-# db:
-#     host: "postgresdb"
-#     port: 5432
-#     username: "postgres"
-#     name: "house_service"
-#     password: "postgres"
 http_server:
-    address: "localhost:8082"
+    address: ":8082"
     timeout: 4s
     iddle_timeout: 60s
     shutdown_timeout: 10s
 db:
-    host: "localhost"
-    port: 1234
+    host: "postgresdb"
+    port: 5432
     username: "postgres"
     name: "house_service"
     password: "postgres"

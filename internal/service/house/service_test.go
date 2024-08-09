@@ -1,48 +1,98 @@
 package house
 
 import (
-	"avito-backend-bootcamp/internal/model"
 	"context"
-	"log/slog"
-	"reflect"
+	"errors"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	repoErr "avito-backend-bootcamp/internal/infra/repository"
+	"avito-backend-bootcamp/internal/model"
+	repository "avito-backend-bootcamp/internal/service/house/mocks"
+	"avito-backend-bootcamp/pkg/utils/sl"
 )
 
+const (
+	testAddress   = "123 Main St"
+	testDeveloper = "Acme Developers"
+	testYear      = int64(2024)
+	testID        = int64(3)
+)
+
+type MockHouseRepository struct {
+	ctrl *gomock.Controller
+	mock *repository.MockHouseRepository
+}
+
+func NewMockHouseRepository(ctrl *gomock.Controller) *MockHouseRepository {
+	mock := repository.NewMockHouseRepository(ctrl)
+	return &MockHouseRepository{
+		ctrl: ctrl,
+		mock: mock,
+	}
+}
+
 func TestService_CreateHouse(t *testing.T) {
-	t.Parallel()
-	type fields struct {
-		log            *slog.Logger
-		houseRpository HouseRepository
-	}
-	type args struct {
-		ctx       context.Context
-		address   string
-		developer string
-		year      int64
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *model.House
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &Service{
-				log:            tt.fields.log,
-				houseRpository: tt.fields.houseRpository,
-			}
-			got, err := s.CreateHouse(tt.args.ctx, tt.args.address, tt.args.developer, tt.args.year)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Service.CreateHouse() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Service.CreateHouse() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	t.Run("success", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := NewMockHouseRepository(ctrl)
+		mockRepo.mock.EXPECT().
+			SaveHouse(gomock.Any(), testAddress, testDeveloper, testYear).
+			Return(&model.House{ID: testID}, nil)
+
+		s := &Service{
+			houseRpository: mockRepo.mock,
+			log:            sl.SetupLogger(),
+		}
+
+		house, err := s.CreateHouse(context.Background(), testAddress, testDeveloper, testYear)
+
+		require.NoError(t, err)
+		assert.Equal(t, testID, house.ID)
+	})
+
+	t.Run("house already exists", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := NewMockHouseRepository(ctrl)
+		mockRepo.mock.EXPECT().
+			SaveHouse(gomock.Any(), testAddress, testDeveloper, testYear).
+			Return(nil, repoErr.ErrAlreadyExists)
+
+		s := &Service{
+			houseRpository: mockRepo.mock,
+			log:            sl.SetupLogger(),
+		}
+
+		_, err := s.CreateHouse(context.Background(), testAddress, testDeveloper, testYear)
+
+		require.Error(t, err)
+		assert.Equal(t, ErrAddressAlreadyUsed, err)
+	})
+
+	t.Run("error saving house", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := NewMockHouseRepository(ctrl)
+		mockRepo.mock.EXPECT().
+			SaveHouse(gomock.Any(), testAddress, testDeveloper, testYear).
+			Return(nil, errors.New("failed to save house"))
+
+		s := &Service{
+			houseRpository: mockRepo.mock,
+			log:            sl.SetupLogger(),
+		}
+
+		_, err := s.CreateHouse(context.Background(), testAddress, testDeveloper, testYear)
+
+		require.Error(t, err)
+		assert.NotEqual(t, ErrAddressAlreadyUsed, err)
+	})
 }

@@ -21,3 +21,7 @@ type Cache interface {
 	Get(key int64) (string, bool)
 	Remove(key int64)
 }
+
+type TrManager interface {
+	Do(ctx context.Context, fn func(ctx context.Context) error) (err error)
+}
