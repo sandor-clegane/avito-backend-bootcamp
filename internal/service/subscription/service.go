@@ -25,6 +25,7 @@ func New(log *slog.Logger, repository SubscriberRepository) *Service {
 }
 
 var ErrInvalidSubscription = errors.New("this house does not exist or there is no user with this address")
+var ErrAlreadyExists = errors.New("you already have subscription for this house")
 
 func (s *Service) CreateSubscription(ctx context.Context, houseID int64, email string) error {
 	const op = "subscription.CreateSubscription"
@@ -39,6 +40,9 @@ func (s *Service) CreateSubscription(ctx context.Context, houseID int64, email s
 	if err != nil {
 		if errors.Is(err, repository.ErrConstraintViolation) {
 			return ErrInvalidSubscription
+		}
+		if errors.Is(err, repository.ErrAlreadyExists) {
+			return ErrAlreadyExists
 		}
 		log.Error("failed to save subscription", sl.Err(err))
 		return err

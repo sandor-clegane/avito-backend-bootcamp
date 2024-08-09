@@ -73,6 +73,11 @@ func New(log *slog.Logger, validate *validator.Validate, subService Subscription
 				render.JSON(w, r, resp.NewError(err))
 				return
 			}
+			if errors.Is(err, sub.ErrAlreadyExists) {
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.NewError(err))
+				return
+			}
 			h.WriteInternalError(r, w, err)
 			return
 		}

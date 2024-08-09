@@ -90,7 +90,7 @@ func (s *Service) Login(ctx context.Context, ID uuid.UUID, password string) (str
 }
 
 var (
-	ErrEmailAlreadyUser = errors.New("this email already used")
+	ErrEmailAlreadyUsed = errors.New("this email already used")
 )
 
 func (s *Service) Register(ctx context.Context, email, password string, role model.UserType) (uuid.UUID, error) {
@@ -111,9 +111,9 @@ func (s *Service) Register(ctx context.Context, email, password string, role mod
 
 	id, err := s.repository.SaveUser(ctx, email, string(passHash), role)
 	if err != nil {
-		if errors.Is(err, repository.ErrConstraintViolation) {
+		if errors.Is(err, repository.ErrAlreadyExists) {
 			log.Error("email already user", sl.Err(err))
-			return uuid.UUID{}, ErrEmailAlreadyUser
+			return uuid.UUID{}, ErrEmailAlreadyUsed
 		}
 		log.Error("failed to save user", sl.Err(err))
 		return uuid.UUID{}, fmt.Errorf("%s: %w", op, err)

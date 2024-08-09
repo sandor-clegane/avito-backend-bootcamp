@@ -1,11 +1,8 @@
 package postgres
 
 import (
-	repo "avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/internal/model"
 	"context"
-	"database/sql"
-	"errors"
 )
 
 // SubsciptionListByHouseID retrieves a list of subscriptions associated with a given house ID.
@@ -21,7 +18,7 @@ func (r *Repository) SubsciptionListByHouseID(ctx context.Context, houseID int64
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		SelectContext(ctx, &subscriptions, query, houseID)
 	if err != nil {
-		return nil, err
+		return nil, PostgresErrorTransform(err)
 	}
 
 	return subscriptions, nil
@@ -38,10 +35,7 @@ func (r *Repository) SaveSubscritpion(ctx context.Context, houseID int64, email 
 	_, err := r.getter.DefaultTrOrDB(ctx, r.db).
 		ExecContext(ctx, query, houseID, email)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return repo.ErrConstraintViolation
-		}
-		return err
+		return PostgresErrorTransform(err)
 	}
 
 	return nil

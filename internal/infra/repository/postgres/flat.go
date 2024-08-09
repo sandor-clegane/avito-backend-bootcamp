@@ -1,10 +1,8 @@
 package postgres
 
 import (
-	repo "avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/internal/model"
 	"context"
-	"database/sql"
 )
 
 // GetFlat retrieves a flat by its ID from the database.
@@ -18,10 +16,7 @@ func (r *Repository) GetFlat(ctx context.Context, ID int64) (*model.Flat, error)
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		GetContext(ctx, &flat, query, ID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, repo.ErrNotFound
-		}
-		return nil, err
+		return nil, PostgresErrorTransform(err)
 	}
 
 	return &flat, nil
@@ -38,10 +33,7 @@ func (r *Repository) SaveFlat(ctx context.Context, houseID, price, rooms int64) 
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		GetContext(ctx, &flat, query, houseID, price, rooms)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, repo.ErrConstraintViolation
-		}
-		return nil, err
+		return nil, PostgresErrorTransform(err)
 	}
 
 	return &flat, nil
@@ -58,10 +50,7 @@ func (r *Repository) UpdateFlat(ctx context.Context, flat *model.Flat) (*model.F
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		GetContext(ctx, flat, query, flat.HouseID, flat.Price, flat.Rooms, flat.Status, flat.ID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, repo.ErrNotFound
-		}
-		return nil, err
+		return nil, PostgresErrorTransform(err)
 	}
 
 	return flat, nil
@@ -78,7 +67,7 @@ func (r *Repository) FlatListByHouseID(ctx context.Context, houseID int64) ([]*m
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		SelectContext(ctx, &flats, query, houseID)
 	if err != nil {
-		return nil, err
+		return nil, PostgresErrorTransform(err)
 	}
 
 	return flats, nil

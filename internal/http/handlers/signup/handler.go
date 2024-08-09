@@ -72,7 +72,7 @@ func New(log *slog.Logger, validate *validator.Validate, authService AuthService
 		// Register the user
 		userID, err := authService.Register(r.Context(), req.Email, req.Password, userTypeParsed)
 		if err != nil {
-			if errors.Is(err, auth.ErrEmailAlreadyUser) {
+			if errors.Is(err, auth.ErrEmailAlreadyUsed) {
 				log.Error("user with given email already exist", sl.Err(err))
 				render.Status(r, http.StatusBadRequest)
 				render.JSON(w, r, resp.NewError(err))

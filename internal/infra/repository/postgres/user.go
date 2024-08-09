@@ -1,11 +1,8 @@
 package postgres
 
 import (
-	repo "avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/internal/model"
 	"context"
-	"database/sql"
-	"errors"
 
 	"github.com/google/uuid"
 )
@@ -24,10 +21,7 @@ func (r *Repository) SaveUser(ctx context.Context, email, password string, role 
 	_, err := r.getter.DefaultTrOrDB(ctx, r.db).
 		ExecContext(ctx, query, userID, email, password, role)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return uuid.UUID{}, repo.ErrConstraintViolation
-		}
-		return uuid.UUID{}, err
+		return uuid.UUID{}, PostgresErrorTransform(err)
 	}
 
 	return userID, nil
@@ -46,10 +40,7 @@ func (r *Repository) GetUser(ctx context.Context, ID uuid.UUID) (*model.User, er
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		GetContext(ctx, &user, query, ID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repo.ErrNotFound
-		}
-		return nil, err
+		return nil, PostgresErrorTransform(err)
 	}
 
 	return &user, nil

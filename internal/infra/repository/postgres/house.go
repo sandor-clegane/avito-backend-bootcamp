@@ -1,10 +1,8 @@
 package postgres
 
 import (
-	repo "avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/internal/model"
 	dbUtil "avito-backend-bootcamp/pkg/utils/db"
-	"errors"
 
 	"context"
 	"database/sql"
@@ -22,10 +20,7 @@ func (r *Repository) SaveHouse(ctx context.Context, address, developer string, y
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		GetContext(ctx, &houseID, query, address, dbUtil.NewNullString(developer), year)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repo.ErrConstraintViolation
-		}
-		return nil, err
+		return nil, PostgresErrorTransform(err)
 	}
 
 	// Create a new house object with the inserted ID
@@ -52,10 +47,7 @@ func (r *Repository) GetHouse(ctx context.Context, id int64) (*model.House, erro
 	err := r.getter.DefaultTrOrDB(ctx, r.db).
 		GetContext(ctx, &house, query, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, repo.ErrNotFound
-		}
-		return nil, err
+		return nil, PostgresErrorTransform(err)
 	}
 
 	return &house, nil

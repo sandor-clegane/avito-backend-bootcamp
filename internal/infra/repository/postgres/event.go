@@ -1,11 +1,8 @@
 package postgres
 
 import (
-	repo "avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/internal/model"
 	"context"
-	"database/sql"
-	"errors"
 )
 
 // PublishEvent publishes a new event.
@@ -16,10 +13,7 @@ func (r *Repository) PublishEvent(ctx context.Context, eventType model.EventType
 			"VALUES ($1, $2)",
 		eventType, payload)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return repo.ErrConstraintViolation
-		}
-		return err
+		return PostgresErrorTransform(err)
 	}
 
 	return nil
@@ -37,10 +31,7 @@ func (r *Repository) GetNewEvent(ctx context.Context) (*model.Event, error) {
 			"LIMIT 1",
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, repo.ErrNotFound
-		}
-		return nil, err
+		return nil, PostgresErrorTransform(err)
 	}
 
 	return &event, nil
@@ -55,7 +46,7 @@ func (r *Repository) SetDone(ctx context.Context, eventID int64) error {
 		WHERE id = $1`,
 		eventID)
 	if err != nil {
-		return err
+		return PostgresErrorTransform(err)
 	}
 
 	return nil

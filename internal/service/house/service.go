@@ -35,7 +35,7 @@ func (s *Service) CreateHouse(ctx context.Context, address, developer string, ye
 
 	house, err := s.houseRpository.SaveHouse(ctx, address, developer, year)
 	if err != nil {
-		if errors.Is(err, repository.ErrConstraintViolation) {
+		if errors.Is(err, repository.ErrAlreadyExists) {
 			log.Error("attempt to create invalid house", sl.Err(err))
 			return nil, ErrAddressAlreadyUsed
 		}
