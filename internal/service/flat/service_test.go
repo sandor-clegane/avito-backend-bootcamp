@@ -1,14 +1,14 @@
 package flat
 
 import (
+	"avito-backend-bootcamp/internal/infra/repository"
 	repoErr "avito-backend-bootcamp/internal/infra/repository"
 	"avito-backend-bootcamp/internal/model"
-	repository "avito-backend-bootcamp/internal/service/flat/mocks"
+	mock "avito-backend-bootcamp/internal/service/flat/mocks"
 	"avito-backend-bootcamp/pkg/utils/sl"
 	"context"
+	"encoding/json"
 	"errors"
-	"log/slog"
-	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -24,11 +24,6 @@ const (
 	testStatus  = model.StatusCreated
 )
 
-type MockFlatRepository struct {
-	ctrl *gomock.Controller
-	mock *repository.MockFlatRepository
-}
-
 func newTestFlat() *model.Flat {
 	return &model.Flat{
 		ID:      testID,
@@ -39,21 +34,13 @@ func newTestFlat() *model.Flat {
 	}
 }
 
-func NewMockFlatRepository(ctrl *gomock.Controller) *MockFlatRepository {
-	mock := repository.NewMockFlatRepository(ctrl)
-	return &MockFlatRepository{
-		ctrl: ctrl,
-		mock: mock,
-	}
-}
-
 func TestService_CreateFlat(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		mockRepo := NewMockFlatRepository(ctrl)
-		mockRepo.mock.EXPECT().
+		mockRepo := mock.NewMockFlatRepository(ctrl)
+		mockRepo.EXPECT().
 			SaveFlat(gomock.Any(), testHouseID, testPrice, testRooms).
 			Return(&model.Flat{
 				HouseID: testHouseID,
@@ -64,7 +51,7 @@ func TestService_CreateFlat(t *testing.T) {
 			}, nil)
 
 		s := &Service{
-			flatRepository: mockRepo.mock,
+			flatRepository: mockRepo,
 			log:            sl.SetupLogger(),
 		}
 
@@ -78,13 +65,13 @@ func TestService_CreateFlat(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		mockRepo := NewMockFlatRepository(ctrl)
-		mockRepo.mock.EXPECT().
+		mockRepo := mock.NewMockFlatRepository(ctrl)
+		mockRepo.EXPECT().
 			SaveFlat(gomock.Any(), testHouseID, testPrice, testRooms).
 			Return(nil, repoErr.ErrConstraintViolation)
 
 		s := &Service{
-			flatRepository: mockRepo.mock,
+			flatRepository: mockRepo,
 			log:            sl.SetupLogger(),
 		}
 
@@ -98,13 +85,13 @@ func TestService_CreateFlat(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		mockRepo := NewMockFlatRepository(ctrl)
-		mockRepo.mock.EXPECT().
+		mockRepo := mock.NewMockFlatRepository(ctrl)
+		mockRepo.EXPECT().
 			SaveFlat(gomock.Any(), testHouseID, testPrice, testRooms).
 			Return(nil, errors.New("failed to save flat"))
 
 		s := &Service{
-			flatRepository: mockRepo.mock,
+			flatRepository: mockRepo,
 			log:            sl.SetupLogger(),
 		}
 
@@ -115,130 +102,318 @@ func TestService_CreateFlat(t *testing.T) {
 	})
 }
 
-func TestService_UpdateFlat(t *testing.T) {
-	type fields struct {
-		log             *slog.Logger
-		flatRepository  FlatRepository
-		eventRepository EventRepository
-		cache           Cache
-		trManager       TrManager
-	}
-	type args struct {
-		ctx    context.Context
-		ID     int64
-		status model.FlatStatus
-	}
-	tests := []struct {
-		name     string
-		fields   fields
-		args     args
-		wantFlat *model.Flat
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &Service{
-				log:             tt.fields.log,
-				flatRepository:  tt.fields.flatRepository,
-				eventRepository: tt.fields.eventRepository,
-				cache:           tt.fields.cache,
-				trManager:       tt.fields.trManager,
-			}
-			gotFlat, err := s.UpdateFlat(tt.args.ctx, tt.args.ID, tt.args.status)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Service.UpdateFlat() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(gotFlat, tt.wantFlat) {
-				t.Errorf("Service.UpdateFlat() = %v, want %v", gotFlat, tt.wantFlat)
-			}
-		})
+type mocks struct {
+	flatRepository  *mock.MockFlatRepository
+	eventRepository *mock.MockEventRepository
+	cache           *mock.MockCache
+	trManager       *mock.MockTrManager
+}
+
+func newMock(ctrl *gomock.Controller) mocks {
+	return mocks{
+		flatRepository:  mock.NewMockFlatRepository(ctrl),
+		eventRepository: mock.NewMockEventRepository(ctrl),
+		cache:           mock.NewMockCache(ctrl),
+		trManager:       mock.NewMockTrManager(ctrl),
 	}
 }
 
-func TestService_flatListForClient(t *testing.T) {
-	type fields struct {
-		log             *slog.Logger
-		flatRepository  FlatRepository
-		eventRepository EventRepository
-		cache           Cache
-		trManager       TrManager
-	}
-	type args struct {
-		ctx     context.Context
-		houseID int64
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []*model.Flat
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &Service{
-				log:             tt.fields.log,
-				flatRepository:  tt.fields.flatRepository,
-				eventRepository: tt.fields.eventRepository,
-				cache:           tt.fields.cache,
-				trManager:       tt.fields.trManager,
-			}
-			got, err := s.flatListForClient(tt.args.ctx, tt.args.houseID)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Service.flatListForClient() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Service.flatListForClient() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func TestUpdateFlat(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		flat := model.Flat{
+			ID:      1,
+			HouseID: 10,
+			Status:  model.StatusOnModeration,
+		}
+
+		m.flatRepository.
+			EXPECT().
+			GetFlat(gomock.Any(), int64(1)).
+			Return(&flat, nil)
+		m.trManager.
+			EXPECT().
+			Do(gomock.Any(), gomock.Any()).
+			Return(nil)
+
+		service := &Service{
+			log:             sl.SetupLogger(),
+			flatRepository:  m.flatRepository,
+			eventRepository: m.eventRepository,
+			cache:           m.cache,
+			trManager:       m.trManager,
+		}
+
+		resultFlat, err := service.UpdateFlat(context.Background(), 1, model.StatusApproved)
+
+		assert.NoError(t, err)
+		assert.Equal(t, resultFlat.Status, model.StatusApproved)
+	})
+
+	t.Run("flat not found", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		m.flatRepository.
+			EXPECT().
+			GetFlat(gomock.Any(), int64(1)).
+			Return(nil, repository.ErrNotFound)
+
+		service := &Service{
+			log:            sl.SetupLogger(),
+			flatRepository: m.flatRepository,
+		}
+
+		_, err := service.UpdateFlat(context.Background(), 1, model.StatusApproved)
+
+		assert.Equal(t, err, ErrFlatNotExist)
+	})
+
+	t.Run("get flat error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		m.flatRepository.
+			EXPECT().
+			GetFlat(gomock.Any(), int64(1)).
+			Return(nil, errors.New("failed to get flat"))
+
+		service := &Service{
+			log:            sl.SetupLogger(),
+			flatRepository: m.flatRepository,
+		}
+
+		_, err := service.UpdateFlat(context.Background(), 1, model.StatusApproved)
+
+		assert.Error(t, err)
+		assert.NotEqual(t, err, ErrFlatNotExist)
+	})
+
+	t.Run("update flat error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		m.flatRepository.
+			EXPECT().
+			GetFlat(gomock.Any(), int64(1)).
+			Return(&model.Flat{Status: model.StatusOnModeration}, nil)
+		m.trManager.
+			EXPECT().
+			Do(gomock.Any(), gomock.Any()).
+			Return(errors.New("failed to update flat"))
+
+		service := &Service{
+			log:            sl.SetupLogger(),
+			flatRepository: m.flatRepository,
+			trManager:      m.trManager,
+		}
+
+		_, err := service.UpdateFlat(context.Background(), 1, model.StatusApproved)
+
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid status transition", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		m.flatRepository.
+			EXPECT().
+			GetFlat(gomock.Any(), int64(1)).
+			Return(&model.Flat{Status: model.StatusOnModeration}, nil)
+
+		service := &Service{
+			log:            sl.SetupLogger(),
+			flatRepository: m.flatRepository,
+		}
+
+		_, err := service.UpdateFlat(context.Background(), 1, model.StatusOnModeration)
+
+		assert.Equal(t, err, model.ErrImpossibleTransition)
+	})
 }
 
-func TestService_GetFlatListByHouseID(t *testing.T) {
-	type fields struct {
-		log             *slog.Logger
-		flatRepository  FlatRepository
-		eventRepository EventRepository
-		cache           Cache
-		trManager       TrManager
-	}
-	type args struct {
-		ctx      context.Context
-		houseID  int64
-		userRole model.UserType
-	}
-	tests := []struct {
-		name         string
-		fields       fields
-		args         args
-		wantFlatList []*model.Flat
-		wantErr      bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &Service{
-				log:             tt.fields.log,
-				flatRepository:  tt.fields.flatRepository,
-				eventRepository: tt.fields.eventRepository,
-				cache:           tt.fields.cache,
-				trManager:       tt.fields.trManager,
-			}
-			gotFlatList, err := s.GetFlatListByHouseID(tt.args.ctx, tt.args.houseID, tt.args.userRole)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Service.GetFlatListByHouseID() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(gotFlatList, tt.wantFlatList) {
-				t.Errorf("Service.GetFlatListByHouseID() = %v, want %v", gotFlatList, tt.wantFlatList)
-			}
-		})
-	}
+func TestFlatListForClient(t *testing.T) {
+	t.Run("cache hit", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		houseID := int64(10)
+		flatList := []*model.Flat{
+			{ID: 1, HouseID: houseID, Status: model.StatusApproved},
+			{ID: 2, HouseID: houseID, Status: model.StatusApproved},
+		}
+		flatsJSON, _ := json.Marshal(flatList)
+
+		m.cache.
+			EXPECT().
+			Get(houseID).
+			Return(string(flatsJSON), true)
+
+		service := &Service{
+			log:            sl.SetupLogger(),
+			flatRepository: m.flatRepository,
+			cache:          m.cache,
+		}
+
+		resultFlatList, err := service.flatListForClient(context.Background(), houseID)
+
+		assert.NoError(t, err)
+		assert.Equal(t, resultFlatList, flatList)
+	})
+
+	t.Run("cache hit with invalid json", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		houseID := int64(10)
+		invalidJSON := []byte("invalid json")
+
+		m.cache.
+			EXPECT().
+			Get(houseID).
+			Return(string(invalidJSON), true)
+		m.cache.
+			EXPECT().
+			Remove(houseID)
+		m.flatRepository.
+			EXPECT().
+			FlatListByHouseID(gomock.Any(), gomock.Any()).
+			Return(nil, nil)
+		m.cache.
+			EXPECT().
+			Set(houseID, gomock.Any())
+
+		service := &Service{
+			log:            sl.SetupLogger(),
+			flatRepository: m.flatRepository,
+			cache:          m.cache,
+		}
+
+		resultFlatList, err := service.flatListForClient(context.Background(), houseID)
+
+		assert.NoError(t, err)
+		assert.Equal(t, resultFlatList, []*model.Flat{})
+	})
+
+	t.Run("cache miss", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		houseID := int64(10)
+		flatList := []*model.Flat{
+			{ID: 1, HouseID: houseID, Status: model.StatusApproved},
+			{ID: 2, HouseID: houseID, Status: model.StatusApproved},
+		}
+
+		m.cache.
+			EXPECT().
+			Get(houseID).
+			Return("", false)
+		m.flatRepository.
+			EXPECT().
+			FlatListByHouseID(gomock.Any(), houseID).
+			Return(flatList, nil)
+		m.cache.
+			EXPECT().
+			Set(houseID, gomock.Any())
+		service := &Service{
+			log:            sl.SetupLogger(),
+			flatRepository: m.flatRepository,
+			cache:          m.cache,
+		}
+
+		resultFlatList, err := service.flatListForClient(context.Background(), houseID)
+
+		assert.NoError(t, err)
+		assert.Equal(t, resultFlatList, flatList)
+	})
+
+	t.Run("database error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		houseID := int64(10)
+		databaseError := errors.New("database error")
+
+		m.cache.
+			EXPECT().
+			Get(houseID).
+			Return("", false)
+		m.flatRepository.
+			EXPECT().
+			FlatListByHouseID(gomock.Any(), houseID).
+			Return(nil, databaseError)
+
+		service := &Service{
+			log:            sl.SetupLogger(),
+			flatRepository: m.flatRepository,
+			cache:          m.cache,
+		}
+
+		resultFlatList, err := service.flatListForClient(context.Background(), houseID)
+
+		assert.Error(t, err)
+		assert.Equal(t, err, databaseError)
+		assert.Nil(t, resultFlatList)
+	})
+
+	t.Run("filter active flats", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		m := newMock(ctrl)
+
+		houseID := int64(10)
+		flatList := []*model.Flat{
+			{ID: 1, HouseID: houseID, Status: model.StatusApproved},
+			{ID: 2, HouseID: houseID, Status: model.StatusOnModeration},
+			{ID: 3, HouseID: houseID, Status: model.StatusApproved},
+		}
+
+		m.cache.
+			EXPECT().
+			Get(houseID).
+			Return("", false)
+		m.flatRepository.
+			EXPECT().
+			FlatListByHouseID(gomock.Any(), houseID).
+			Return(flatList, nil)
+		m.cache.
+			EXPECT().
+			Set(houseID, gomock.Any())
+
+		service := &Service{
+			log:            sl.SetupLogger(),
+			flatRepository: m.flatRepository,
+			cache:          m.cache,
+		}
+
+		resultFlatList, err := service.flatListForClient(context.Background(), houseID)
+
+		assert.NoError(t, err)
+		assert.Equal(t, len(resultFlatList), 2)
+		assert.Equal(t, resultFlatList[0].ID, int64(1))
+		assert.Equal(t, resultFlatList[1].ID, int64(3))
+	})
 }
